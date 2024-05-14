@@ -7891,3 +7891,7 @@
 1715691231: mosquitto version 2.0.18 running
 1715691280: New client connected from ::ffff:172.22.0.1:51222 as mqttjs_dc99c96b (p2, c1, k60, u'admin').
 1715691304: Client mqttjs_dc99c96b closed its connection.
+1715691522: New client connected from ::ffff:172.22.0.1:54982 as mqttjs_d05a2596 (p2, c1, k60, u'admin').
+1715691560: Client mqttjs_d05a2596 closed its connection.
+1715691801: mosquitto version 2.0.18 terminating
+1715691801: Saving in-memory database to /mosquitto/data//mosquitto.db.
