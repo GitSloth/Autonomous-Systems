@@ -7883,3 +7883,11 @@
 1715691042: mosquitto version 2.0.18 running
 1715691094: mosquitto version 2.0.18 terminating
 1715691094: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1715691231: mosquitto version 2.0.18 starting
+1715691231: Config loaded from /mosquitto/config/mosquitto.conf.
+1715691231: Opening ipv4 listen socket on port 1883.
+1715691231: Opening ipv6 listen socket on port 1883.
+1715691231: Opening websockets listen socket on port 9001.
+1715691231: mosquitto version 2.0.18 running
+1715691280: New client connected from ::ffff:172.22.0.1:51222 as mqttjs_dc99c96b (p2, c1, k60, u'admin').
+1715691304: Client mqttjs_dc99c96b closed its connection.
