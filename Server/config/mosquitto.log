@@ -196,3 +196,12 @@
 1715776102: New connection from 172.18.0.1:36368 on port 1883.
 1715776102: New client connected from 172.18.0.1:36368 as python-mqtt-45 (p2, c1, k60).
 1715776108: Client python-mqtt-45 closed its connection.
+1715859527: mosquitto version 2.0.18 starting
+1715859527: Config loaded from /mosquitto/config/mosquitto.conf.
+1715859527: Opening ipv4 listen socket on port 1883.
+1715859527: Opening ipv6 listen socket on port 1883.
+1715859527: Opening websockets listen socket on port 9001.
+1715859527: mosquitto version 2.0.18 running
+1715861327: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1715863128: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1715864929: Saving in-memory database to /mosquitto/data//mosquitto.db.
