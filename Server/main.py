@@ -13,7 +13,8 @@ To test in your own house, change the ssid and password accordingly
 import socket
 import network
 import time
-from machine import Pin, PWM, ADC
+from machine import Pin, PWM, ADC, I2C
+from vl53l0x import VL53L0X
 
 
 BUILT_IN_LED=25 # Built in led
@@ -22,13 +23,15 @@ BLED=21 # Back led Green
 PWM_LM=6 # Left Continuous Servo
 PWM_RM=7 # Right Continuous Servo
 PWM_SC=10 # Panning Servo
-SDA=4
-SCL=5
 MISO=16
 MOSI=19
 SCK=18
 CS=17
+
 LDR_PIN = 27
+
+sda_pin = Pin(0)
+scl_pin = Pin(1)
 
 # insert here your network parameters
 #ssid=b'tesla iot'
@@ -37,6 +40,11 @@ LDR_PIN = 27
 ssid=b'TP-LINK_F1F6'
 pwd=b'18930160'
 
+# Initialize ADC for LDR
+ldr = ADC(Pin(LDR_PIN))
+
+# Initialize the I2C bus
+i2c = I2C(0, sda=sda_pin, scl=scl_pin, freq=400000)
 
 # initial state definition
 built_in_led = machine.Pin("LED", machine.Pin.OUT) # build in led
@@ -58,8 +66,15 @@ RightMotor.freq(50)
 PanMotor = PWM(Pin(PWM_SC))
 PanMotor.freq(50)
 
-# Initialize ADC for LDR
-ldr = ADC(Pin(LDR_PIN))
+# Scan for I2C devices
+devices = i2c.scan()
+print("I2C devices found:", devices)
+
+# Create a VL53L0X object
+tof = VL53L0X(i2c)
+
+# Read distance
+# distance_mm = tof.read()
 
 with open("main.html", "r") as page:
     html = page.read()
@@ -105,11 +120,15 @@ def SpinTop():
         PanMotor.duty_u16(duty)  # Rotate the servo to the specified angle
         time.sleep(0.5)  # Wait for the servo to settle
         print("LDR Value:", ldr.read_u16())  # Print LDR value
+        distance_mm = tof.read()
+        print("Distance: {} mm".format(distance_mm))
         time.sleep(1)  # Pause for 1 second
 
     # Stop the servo at the end
     PanMotor.duty_u16(5000)  # Stop the servo (neutral position)
     print("LDR Value:", ldr.read_u16())  # Print LDR value at the end
+    distance_mm = tof.read()
+    print("Distance: {} mm".format(distance_mm))
     time.sleep(1)  # Pause for 1 second
     
     #PanMotor.duty_u16(8000)  # Rotate the servo slightly clockwise
@@ -203,4 +222,5 @@ while True:
     cl.send(response)
     cl.close()
     
+
 
