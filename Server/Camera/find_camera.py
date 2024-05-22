@@ -1,5 +1,5 @@
 import cv2
-
+cv2.CAP_DSHOW
 def find_camera_sources():
     for i in range(10):
         cap = cv2.VideoCapture(i)
@@ -9,10 +9,4 @@ def find_camera_sources():
             print(f"Camera found at index {i}")
             cap.release()
 
-#find_camera_sources()
-cap = cv2.VideoCapture(0)
-while(True):
-
-
-    ret, frame = cap.read()
-    cv2.imshow('window', frame)
+find_camera_sources()

@@ -1,21 +1,32 @@
 import cv2, time
 import numpy as np
 from threading import Thread
-
-
+import platform
 
 class Camera:
     CAMERA = 0
     VIDEO = 1
+    WEB = 2
 
     def __init__(self,camType,source=0):
         self.camType = camType
         self.threadWait = False
-        self.capture = cv2.VideoCapture(source)
-        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        # self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-        self.frame = np.zeros((100,100, 3), dtype = np.uint8)
+        if self.camType == 0:
+            if platform.system() == 'Windows':
+                self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW) #without dshow it takes 10 minutes for the camera to open.
+            else:
+                self.capture =cv2.VideoCapture(source)
+            self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            self.frame = np.zeros((1280,720, 3), dtype = np.uint8)
+        if self.camType == 1:
+            self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+            self.frame = np.zeros((1920,1080, 3), dtype = np.uint8)
+        if self.camType == 2:
+            self.capture = cv2.VideoCapture(source)
+            self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            self.frame = np.zeros((1280,720, 3), dtype = np.uint8)
 
         self.FPS = 1/60
         self.FPS_MS = int(self.FPS * 1000)
@@ -41,5 +52,8 @@ class Camera:
 
     def getImage(self):
         return self.frame
+    
+    def release(self):
+        self.capture.release()
 
     
