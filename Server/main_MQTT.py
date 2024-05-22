@@ -4,7 +4,7 @@ from machine import Pin, PWM, ADC
 from umqtt.simple import MQTTClient
 import network
 
-broker = '145.24.238.47'
+broker = '10.198.64.131'
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
@@ -90,22 +90,40 @@ def handle_command(command):
 
 # Connect to MQTT broker and start listening for commands
 def connect_mqtt():
-    client.set_callback(on_message)
-    client.connect()
-    print("Robot connected to MQTT Broker!")
-    client.subscribe(f"robots/{client_id}/config")
-    print(f"Subscribed to robots/{client_id}/config")
-    client.publish(topic_register, client_id)
-    print(f"Registration message sent: {client_id}")
+    try:
+        client.set_callback(on_message)
+        client.connect()
+        print("Robot connected to MQTT Broker!")
+        client.subscribe(f"robots/{client_id}/config")
+        print(f"Subscribed to robots/{client_id}/config")
+        client.publish(topic_register, client_id)
+        print(f"Registration message sent: {client_id}")
+    except Exception as e:
+        print(f"Failed to connect to MQTT Broker: {e}")
+        fled.value(True)
+        time.sleep(0.2)
+        fled.value(False)
+        time.sleep(0.2)
+        fled.value(True)
+        time.sleep(0.2)
+        fled.value(False)
+        time.sleep(0.2)
+        fled.value(True)
+        time.sleep(0.2)
+        fled.value(False)
 
 # MQTT client loop
 def run_mqtt():
     global client
     connect_mqtt()
     while True:
-        client.check_msg()  # Check for new messages
+        try:
+            client.check_msg()  # Check for new messages
+        except OSError as e:
+            print(f"Error in MQTT loop: {e}")
+            time.sleep(2)  # Wait before retrying
+            connect_mqtt()
         time.sleep(0.01)
-
 #=========================MOVES============================
 # Function controlling servos
 def MoveForward(power, Stime):
@@ -155,8 +173,8 @@ def SpinTop(power=50, Stime=1):
 
 #==============================WIFI=============================
 # Activate the Pico LAN
-ssid = 'tesla iot'
-password = 'fsL6HgjN'
+ssid = 'ssid'
+password = 'pass'
 
 network.hostname("mypicow")
 wlan = network.WLAN(network.STA_IF)
@@ -182,4 +200,5 @@ print(sta_if.ifconfig()[0])  # Print the IP on the serial
 
 # Listen for MQTT commands
 run_mqtt()
+
 
