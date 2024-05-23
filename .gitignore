@@ -1,5 +1,3 @@
 .venv
-Server/Certificaten/*
-Server/config/ssl/*
 Server/config/mosquitto.db
 Server/config/mosquitto.log
