@@ -4,7 +4,7 @@ from machine import Pin, PWM, ADC
 from umqtt.simple import MQTTClient
 import network
 
-broker = '10.198.64.131'
+broker = '10.198.64.131' 
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
@@ -43,6 +43,8 @@ RightMotor = PWM(Pin(PWM_RM))
 RightMotor.freq(50)
 PanMotor = PWM(Pin(PWM_SC))
 PanMotor.freq(50)
+stop_duty = 4915
+duty_range = 1638
 
 # Setup MQTT client
 client = MQTTClient(client_id, broker, port)
@@ -68,6 +70,8 @@ def on_message(topic, msg):
         handle_command(command)
         
 def handle_command(command):
+    command = command.strip().upper()
+    print(command)
     if command == "FRONT_LED_ON":
         fled.value(True)
     elif command == "FRONT_LED_OFF":
@@ -77,7 +81,6 @@ def handle_command(command):
     elif command == "BACK_LED_OFF":
         bled.value(False)
     elif command == "MOVE_FORWARD":
-        print(f"hoo")
         MoveForward(50, 1)
     elif command == "MOVE_BACK":
         MoveBack(50, 1)
@@ -87,6 +90,8 @@ def handle_command(command):
         SpinRight(50, 1)
     elif command == "SPIN_TOP":
         SpinTop(50, 1)
+    else:
+        print("Invalid command.")
 
 # Connect to MQTT broker and start listening for commands
 def connect_mqtt():
@@ -100,17 +105,11 @@ def connect_mqtt():
         print(f"Registration message sent: {client_id}")
     except Exception as e:
         print(f"Failed to connect to MQTT Broker: {e}")
-        fled.value(True)
-        time.sleep(0.2)
-        fled.value(False)
-        time.sleep(0.2)
-        fled.value(True)
-        time.sleep(0.2)
-        fled.value(False)
-        time.sleep(0.2)
-        fled.value(True)
-        time.sleep(0.2)
-        fled.value(False)
+        for i in range(3):
+            fled.value(True)
+            time.sleep(0.2)
+            fled.value(False)
+            time.sleep(0.2)
 
 # MQTT client loop
 def run_mqtt():
@@ -125,39 +124,58 @@ def run_mqtt():
             connect_mqtt()
         time.sleep(0.01)
 #=========================MOVES============================
+#set servo speed of the left motor
+#-100 to 100, 0 for stop
+def set_servo_speed_left(speed):
+    #if speed > 100:
+    #    speed = 100
+    #elif speed < -100:
+    #    speed = -100
+     
+    duty = stop_duty + int(speed * duty_range / 100)  
+    LeftMotor.duty_u16(duty)        
+
+#set servo speed of the right motor
+#-100 to 100, 0 for stop
+def set_servo_speed_right(speed):
+    #if speed > 100:
+    #    speed = 100
+    #elif speed < -100:
+    #    speed = -100
+    duty = stop_duty + int((speed * (-1)) * duty_range / 100)  
+    RightMotor.duty_u16(duty) 
 # Function controlling servos
 def MoveForward(power, Stime):
-    print(f"hiii")
-    LeftMotor.duty_u16(2000)
-    RightMotor.duty_u16(6600)
+    set_servo_speed_left(40) 
+    set_servo_speed_right(40)
     time.sleep(Stime)
-    LeftMotor.duty_u16(5000)
-    RightMotor.duty_u16(5000)
-    SpinTop()
+    set_servo_speed_left(0)
+    set_servo_speed_right(0)
+    #SpinTop()
 
 def MoveBack(power, Stime):
-    LeftMotor.duty_u16(6600)
-    RightMotor.duty_u16(2000)
+    set_servo_speed_left(-40)
+    set_servo_speed_right(-40)
     time.sleep(Stime)
-    LeftMotor.duty_u16(5000)
-    RightMotor.duty_u16(5000)
-    SpinTop()
+    set_servo_speed_left(0)
+    set_servo_speed_right(0)
+    #SpinTop()
 
 def SpinLeft(power, Stime):
-    LeftMotor.duty_u16(5000)
-    RightMotor.duty_u16(6000)
+    set_servo_speed_left(0)
+    set_servo_speed_right(40)
     time.sleep(Stime)
-    LeftMotor.duty_u16(5000)
-    RightMotor.duty_u16(5000)
-    SpinTop()
+    set_servo_speed_left(0)
+    set_servo_speed_right(0)
+    #SpinTop()
 
 def SpinRight(power, Stime):
-    LeftMotor.duty_u16(2000)
-    RightMotor.duty_u16(5000)
+    set_servo_speed_left(40)
+    set_servo_speed_right(0)
     time.sleep(Stime)
-    LeftMotor.duty_u16(5000)
-    RightMotor.duty_u16(5000)
-    SpinTop()
+    set_servo_speed_left(0)
+    set_servo_speed_right(0)
+    #SpinTop()
 
 def SpinTop(power=50, Stime=1):
     duty_cycles = [2000, 3000, 4000, 5000, 6000, 7000, 8000]
@@ -200,5 +218,6 @@ print(sta_if.ifconfig()[0])  # Print the IP on the serial
 
 # Listen for MQTT commands
 run_mqtt()
+
 
 
