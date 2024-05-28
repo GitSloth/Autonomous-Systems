@@ -14,6 +14,7 @@ def on_connect(client, userdata, flags, rc):
         print("Failed to connect, return code", rc)
 
 def on_message(client, userdata, msg):
+    print(f"printers")
     global next_robot_id
     if msg.topic == "swarm/register":
         robot_id = msg.payload.decode()
@@ -22,10 +23,11 @@ def on_message(client, userdata, msg):
         client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
         print(f"Assigned ID {robot_id} to new robot. Config sent.")
 
-        client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
+        #client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
         print(f"Created topics for robot {robot_id}: {topic_receive}, {topic_send}")
 
 def connect_mqtt():
+    
     client = mqtt_client.Client(client_id)
     client.on_connect = on_connect
     client.on_message = on_message
