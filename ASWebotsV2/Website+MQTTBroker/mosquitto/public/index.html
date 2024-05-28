@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat and Random Color Grid</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    #name_demo {
+      font-weight: bold;
+    }
+
+    #left_message_box,
+    #right_message_box {
+      height: 200px;
+      width: 300px;
+      overflow-y: scroll;
+      border: 1px solid green;
+      padding: 5px;
+      margin-bottom: 20px;
+    }
+
+    .chat-box-right #right_message_box {
+      height: 300px;
+    }
+
+    form {
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      padding: 5px;
+      width: 300px;
+    }
+
+    #sendButton {
+      padding: 5px 20px;
+      font-size: 16px;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: calc(100vh - 280px);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      grid-gap: 1px;
+      width: 400px;
+      height: 400px;
+      border: 1px solid black;
+    }
+
+    .cell {
+      background-color: #000000;
+    }
+
+    .chat-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin: 20px;
+    }
+
+    #message_form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .button-container button {
+      display: inline-block;
+      padding: 5px 20px;
+      font-size: 16px;
+    }
+
+    .button-container button:first-child {
+      margin-right: 10px;
+    }
+
+    .chat-container {
+      display: flex;
+    }
+
+    .chat-box-left,
+    .chat-box-right {
+      flex: 1;
+      margin: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Webots Controller Dashboard</h1>
+  <div class="container">
+    <div class="grid" id="grid"></div>
+    <div class="chat-container">
+      <div class="chat-box chat-box-left">
+        <p id="name_demo"></p>
+        <div id="left_message_box"></div>
+        <form id="message_form">
+          <label for="message">Message you want to send:</label> <br>
+          <input type="text" id="message" maxlength="50" size="40"><br><br>
+          <div class="button-container">
+            <button id="sendButton">Send</button>
+            <button id="noodknopButton">Noodknop</button>
+          </div>
+        </form>
+      </div>
+      <div class="chat-box chat-box-right">
+
+        <p id="Queue"></p>
+        <div id="right_message_box"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let noodknopActive = false;
+    const clientId = 'mqttjs_' + Math.random().toString(16).substr(2, 8);
+    let user_name = "admin";
+    let password = "admin";
+    const host = 'ws://localhost:9001/mqtt';
+
+    const options = {
+      keepalive: 60,
+      username: user_name,
+      password: password,
+      protocolId: 'MQTT',
+      protocolVersion: 4,
+      clean: true,
+      reconnectPeriod: 1000,
+      connectTimeout: 30 * 1000,
+      will: {
+        topic: 'publish/robots',
+        qos: 0,
+        retain: false
+      }
+    };
+
+    console.log('Connecting mqtt client');
+    const client = mqtt.connect(host, options);
+
+    client.on('connect', () => {
+      console.log('Client connected: ' + clientId);
+      client.subscribe('publish/server', { qos: 0 });
+      client.subscribe('publish/pixels', { qos: 0 });
+      client.publish('publish/robots', 'pixel_color');
+      client.publish('publish/robots', 'emgc_status');
+      client.publish('publish/robots', 'get_queues');
+    });
+
+    client.on('error', (err) => {
+      console.log('Connection error: ', err);
+      client.end();
+    });
+
+    client.on('reconnect', () => {
+      console.log('Reconnecting...');
+    });
+
+    const list = [];
+
+    client.on('message', (topic, message, packet) => {
+  const newDiv = document.createElement("div");
+  const newContent = document.createTextNode(message);
+  newDiv.appendChild(newContent);
+  console.log('Received Message: ' + message.toString() + '\nOn topic: ' + topic);
+
+  if (message.toString().startsWith('pixel_color:')) {
+    const regex = /pixel_color:\((\d+),(\d+)\):\((\d+),(\d+),(\d+)\)/;
+    const match = message.toString().match(regex);
+    if (match) {
+      const x = parseInt(match[1]);
+      const y = parseInt(match[2]);
+      const r = parseInt(match[3]);
+      const g = parseInt(match[4]);
+      const b = parseInt(match[5]);
+      console.log('x:', x, 'y:', y, 'R:', r, 'G:', g, 'B:', b);
+
+      const grid = document.getElementById('grid');
+      const cellIndex = y * 10 + x;
+      const cell = grid.getElementsByClassName('cell')[cellIndex];
+
+      cell.style.backgroundColor = 'rgb(' + r + ',' + g + ',' + b + ')';
+
+      return;
+    }
+  } else if (message.toString().startsWith('add:')) {
+    const value = message.toString().substring(4);
+
+  
+    if (list.includes(value)) {
+        console.log("al in list");
+    } else {
+        list.push(value);
+
+        const rightMessageBox = document.getElementById("right_message_box");
+        rightMessageBox.innerHTML = "Queue:<br>" + list.join("<br>");
+    }
+}
+ else if (message.toString().startsWith('remove:')) {
+    const valueToRemove = message.toString().substring(7);
+    const index = list.indexOf(valueToRemove);
+    if (index !== -1) {
+      list.splice(index, 1);
+    }
+
+    const rightMessageBox = document.getElementById("right_message_box");
+    rightMessageBox.innerHTML = "Queue:<br>" + list.join("<br>");
+
+    console.log('Value removed:', valueToRemove);
+  } else {
+    const messageBox = document.getElementById("left_message_box");
+    messageBox.appendChild(newDiv);
+    messageBox.scrollTop = messageBox.scrollHeight;
+  }
+   if (message.toString().startsWith('emergency:on')) {
+        noodknopActive = true;
+        updateNoodknopButtonText(); 
+  }
+});
+
+
+    document.getElementById("sendButton").addEventListener("click", sendMessage);
+    document.getElementById("noodknopButton").addEventListener("click", performNoodknopAction);
+
+    function sendMessage(event) {
+      event.preventDefault();
+      let message = document.getElementById("message").value;
+      console.log('Sending message:', message);
+      client.publish('publish/robots', message);
+    }
+
+   
+
+    function performNoodknopAction(event) {
+      event.preventDefault();
+      const noodknopButton = document.getElementById("noodknopButton");
+      const message = noodknopActive ? "dsh_board_0:emgc:off" : "dsh_board_0:emgc:on";
+
+      console.log("Noodknop button pressed. Sending message:", message);
+      client.publish('publish/robots', message);
+
+      if (noodknopActive) {
+        client.publish('publish/robots', 'emergency:on');
+      } else {
+        client.publish('publish/robots', 'emergency:off');
+      }
+
+      noodknopActive = !noodknopActive; 
+      updateNoodknopButtonText(); 
+    }
+    function updateNoodknopButtonText() {
+      const noodknopButton = document.getElementById("noodknopButton");
+
+      if (noodknopActive) {
+        noodknopButton.innerText = "Resume";
+      } else {
+        noodknopButton.innerText = "Noodknop";
+      }
+    }
+
+
+    window.addEventListener('DOMContentLoaded', function() {
+      var grid = document.getElementById('grid');
+      for (var i = 0; i < 10; i++) {
+        for (var j = 0; j < 10; j++) {
+          var cell = document.createElement('div');
+          cell.className = 'cell';
+          grid.appendChild(cell);
+        }
+      }
+
+      // setInterval(updateColors, 100); 
+    });
+  </script>
+</body>
+
+</html>
