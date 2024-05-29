@@ -11,8 +11,8 @@ WorldInfo {
   physicsDisableTime 0
 }
 Viewpoint {
-  orientation -0.13760405280700852 -0.3988470192010428 0.9066345349287821 5.555959513208961
-  position -141.86544595449365 191.74363130038114 109.09862893563903
+  orientation -0.27924358605689936 -0.53025435348176 0.8005331600000863 5.1194528293511175
+  position -2.779275117695955 3.528150583941618 3.304630427505347
 }
 TexturedBackground {
 }
@@ -83,16 +83,18 @@ DEF Centrale_server Robot {
       translation 1.99 0.44 0.289995
       rotation 0.7071017811704173 1.6952594753613506e-09 -0.7071117811673225 3.14159
       fieldOfView 1
-      width 10
-      height 10
     }
     Solid {
       children [
         Shape {
-          appearance PBRAppearance {
-            baseColor 1 0.333333 0
-            roughness 1
-            metalness 0
+          appearance Appearance {
+            material Material {
+            }
+            texture ImageTexture {
+              url [
+                "../controllers/Central_server_py/Required.jpg"
+              ]
+            }
           }
           geometry Box {
             size 0.1 0.1 0.1
@@ -246,6 +248,7 @@ DEF pick_up_robot_3 Pickup_robot {
   ]
 }
 Solid {
+  translation 0 0 -71671.7331763234
   children [
     Shape {
       appearance PBRAppearance {
