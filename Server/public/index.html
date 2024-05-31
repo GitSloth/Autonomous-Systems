@@ -1,181 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Chat and Random Color Grid</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-
-
-
-
-
-    #left_message_box {
-      height: 200px;
-      width: 300px;
-      overflow-y: scroll;
-      border: 1px solid green;
-      padding: 5px;
-      margin-bottom: 20px;
-    }
-
-
-
-
-
-    input[type="text"] {
-      padding: 5px;
-      width: 300px;
-    }
-
-    #sendButton {
-      padding: 5px 20px;
-      font-size: 16px;
-    }
-
-    .container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: calc(100vh - 280px);
-    }
-
-
-
-    .cell {
-      background-color: #000000;
-    }
-
-    .chat-box {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      margin: 20px;
-    }
-
-    #message_form {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 20px;
-    }
-
-    .button-container button {
-      display: inline-block;
-      padding: 5px 20px;
-      font-size: 16px;
-    }
-
-    .button-container button:first-child {
-      margin-right: 10px;
-    }
-
-    .chat-container {
-      display: flex;
-    }
-
-  </style>
+    <meta charset="UTF-8">
+    <title>MQTT Robot Swarm</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center;
+        }
+        .robot-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        .robot-list li {
+            margin: 5px 0;
+            cursor: pointer;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .robot-list li:hover {
+            background-color: #f0f0f0;
+        }
+        #message-input {
+            width: calc(100% - 22px);
+            padding: 5px;
+        }
+    </style>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
-
 <body>
-  <h1>MqttReader</h1>
-  <div class="container">
-
-    <div class="chat-container">
-      <div class="chat-box chat-box-left">
-        <p id="name_demo"></p>
-        <div id="left_message_box"></div>
-        <form id="message_form">
-          <label for="message">Message you want to send:</label> <br>
-          <input type="text" id="message" maxlength="50" size="40"><br><br>
-          <div class="button-container">
-            <button id="sendButton">Send</button>
-          </div>
-        </form>
-      </div>
-      <div class="chat-box chat-box-right">
-
-
-      </div>
+    <div class="container">
+        <h1>Robot Swarm</h1>
+        <ul id="robot-list" class="robot-list"></ul>
+        <div id="message-section" style="display: none;">
+            <input type="text" id="message-input" placeholder="Enter message" />
+            <button onclick="sendMessage()">Send</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    let noodknopActive = false;
-    const clientId = 'mqttjs_' + Math.random().toString(16).substr(2, 8);
-    let user_name = "admin";
-    let password = "admin";
-    const host = 'ws://localhost:9001/mqtt';
+    <script>
+        const host = 'ws://localhost:9001/mqtt';
+        const client = mqtt.connect(host);
 
-    const options = {
-      keepalive: 60,
-      username: user_name,
-      password: password,
-      protocolId: 'MQTT',
-      protocolVersion: 4,
-      clean: true,
-      reconnectPeriod: 1000,
-      connectTimeout: 30 * 1000,
-      will: {
-        topic: 'publish/robots',
-        qos: 0,
-        retain: false
-      }
-    };
+        const robotList = document.getElementById('robot-list');
+        const messageSection = document.getElementById('message-section');
+        const messageInput = document.getElementById('message-input');
 
-    console.log('Connecting mqtt client');
-    const client = mqtt.connect(host, options);
+        let selectedRobot = null;
 
-    client.on('connect', () => {
-      console.log('Client connected: ' + clientId);
-      client.subscribe('test/test', { qos: 0 });
-  
- 
-    });
+        client.on('connect', () => {
+            console.log('Connected to MQTT broker');
+            client.subscribe('swarm/register');
+        });
 
-    client.on('error', (err) => {
-      console.log('Connection error: ', err);
-      client.end();
-    });
+        client.on('message', (topic, message) => {
+            if (topic === 'swarm/register') {
+                const robot = message.toString();
+                if (!document.getElementById(robot)) {
+                    const listItem = document.createElement('li');
+                    listItem.id = robot;
+                    listItem.textContent = robot;
+                    listItem.onclick = () => selectRobot(robot);
+                    robotList.appendChild(listItem);
+                }
+            }
+        });
 
-    client.on('reconnect', () => {
-      console.log('Reconnecting...');
-    });
+        function selectRobot(robot) {
+            selectedRobot = robot;
+            messageSection.style.display = 'block';
+            client.subscribe(`robots/${robot}/send`);
+        }
 
-    const list = [];
-
-    client.on('message', (topic, message, packet) => {
-  const newDiv = document.createElement("div");
-  const newContent = document.createTextNode(message);
-  newDiv.appendChild(newContent);
-  console.log('Received Message: ' + message.toString() + '\nOn topic: ' + topic);
-
-
- if(message.toString()) {
-    const messageBox = document.getElementById("left_message_box");
-    messageBox.appendChild(newDiv);
-    messageBox.scrollTop = messageBox.scrollHeight;
-  }
-
-});
-    document.getElementById("sendButton").addEventListener("click", sendMessage);
-    document.getElementById("noodknopButton").addEventListener("click", performNoodknopAction);
-
-    function sendMessage(event) {
-      event.preventDefault();
-      let message = document.getElementById("message").value;
-      console.log('Sending message:', message);
-      client.publish('test/test', message);
-    }
-
-
-  </script>
+        function sendMessage() {
+            const message = messageInput.value;
+            if (selectedRobot && message) {
+                client.publish(`robots/${selectedRobot}/receive`, message);
+                messageInput.value = '';
+            }
+        }
+    </script>
 </body>
-
 </html>

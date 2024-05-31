@@ -92,8 +92,8 @@ Robot {
         }
       ]
       endPoint Solid {
-        translation 0.4100003644734754 0.3398805191156405 0.2901433023011385
-        rotation 2.5496646296736378e-09 1 -2.549690393863208e-09 1.570799926292551
+        translation 0.40998574960683576 0.3398457651951057 0.2902625421935176
+        rotation -0.00010849099999401 -0.9999999882373873 0.00010842014614041862 4.7119596707568405
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -119,8 +119,8 @@ Robot {
         }
       ]
       endPoint Solid {
-        translation -0.4699996044597198 0.3398799148801346 0.29013247248129503
-        rotation 2.2693255466715128e-09 1 -2.2693545589841236e-09 1.570799918530662
+        translation -0.47001718887655775 0.3398267830321982 0.29024670972913896
+        rotation -8.190833035615494e-05 -0.9999999932960737 8.184667252768942e-05 4.711939680809213
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -140,7 +140,7 @@ Robot {
   ]
   boundingObject USE bomby
   physics Physics {
-    mass 6
+    mass 5
   }
   controller "my_controller123"
 }
