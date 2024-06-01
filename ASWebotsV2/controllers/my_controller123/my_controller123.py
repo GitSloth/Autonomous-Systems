@@ -1,6 +1,7 @@
 import random
 import paho.mqtt.client as mqtt
 from controller import Robot
+import threading
  
 robot = Robot()
 
@@ -77,6 +78,7 @@ def SpinTop(speed, duration):
     motor2.setVelocity(0)
 
 def on_message(client, userdata, msg):
+    print("i love cheese")
     global topics
     topic = msg.topic
     message = msg.payload.decode()
@@ -97,6 +99,7 @@ def on_message(client, userdata, msg):
         print(f"Received command: {message} " + client_id )
         handle_command(message)
 
+        
 def handle_command(command):
     command = command.strip().upper()
     print(command)
@@ -145,7 +148,9 @@ def connect_mqtt():
 def run_mqtt():
     print("Starting")
     connect_mqtt()
-    while robot.step(timestep) != -1:   
-        client.loop()
-
+    message_thread = threading.Thread(target=lambda: client.loop_forever())
+    message_thread.start()
+    while robot.step(timestep) != -1:
+ 
+        pass
 run_mqtt()
