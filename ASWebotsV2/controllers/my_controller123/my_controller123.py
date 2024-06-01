@@ -5,19 +5,28 @@ import threading
  
 robot = Robot()
 
- 
 timestep = int(robot.getBasicTimeStep())
  
 motor1 = robot.getDevice('motor1')
 motor2 = robot.getDevice('motor2')
+motor3 = robot.getDevice('motor3')
+
+
+
+distanceSens = robot.getDevice('distance sensor')
+ldr = robot.getDevice('light sensor')
 motor1.setVelocity(0)
 motor2.setVelocity(0)
+motor3.setVelocity(0)
 
+ldr.enable(timestep)
+distanceSens.enable(timestep)
 
 
  
 motor1.setPosition(float('inf'))  
 motor2.setPosition(float('inf'))
+motor3.setPosition(float('inf'))
 
 
 broker = '192.168.178.121'
@@ -30,10 +39,15 @@ topics = {}
 def MoveForward(speed, duration):
     motor1.setVelocity(speed)
     motor2.setVelocity(speed)
+    motor1.setTorque(8)
+    motor2.setTorque(8)
+
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
+    motor1.setTorque(0)
+    motor2.setTorque(0)
     motor1.setVelocity(0)
     motor2.setVelocity(0)
 
@@ -50,12 +64,17 @@ def MoveBack(speed, duration):
 def SpinLeft(speed, duration):
     motor1.setVelocity(-speed)
     motor2.setVelocity(speed)
+    motor1.setTorque(8)
+    motor2.setTorque(8)
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
+    motor1.setTorque(0)
+    motor2.setTorque(0)
     motor1.setVelocity(0)
     motor2.setVelocity(0)
+    
 
 def SpinRight(speed, duration):
     motor1.setVelocity(speed)
@@ -68,15 +87,50 @@ def SpinRight(speed, duration):
     motor2.setVelocity(0)
 
 def SpinTop(speed, duration):
-    motor1.setVelocity(speed)
-    motor2.setVelocity(speed)
-    end_time = robot.getTime() + duration
+    ldr_readings = []
+    distance_readings = []
+    step_count = 10
+    angle_step = 180 / (step_count - 1)  
+    initial_position = -90   
+    for step in range(step_count):
+ 
+        position_degrees = initial_position + step * angle_step
+        position_radians = position_degrees * (3.14159 / 180)
+
+ 
+        motor3.setPosition(position_radians)
+        motor3.setVelocity(speed)
+        
+        
+        end_time = robot.getTime() + duration  
+        while robot.getTime() < end_time:
+            if robot.step(timestep) == -1:
+                break
+
+ 
+        ldr_value = ldr.getValue()
+        ldr_readings.append(ldr_value)
+        
+        distance_value = distanceSens.getValue()
+        distance_readings.append(distance_value)
+
+ 
+    motor3.setPosition(0)
+    motor3.setVelocity(0)
+
+ 
+    motor3.setPosition(0)
+    end_time = robot.getTime() + duration 
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
-    motor1.setVelocity(0)
-    motor2.setVelocity(0)
+ 
+        
+        motor3.setVelocity(speed)
+    print("LDR Readings:", ldr_readings)
+    print("Distance Readings:", distance_readings)
 
+ 
 def on_message(client, userdata, msg):
     print("i love cheese")
     global topics
