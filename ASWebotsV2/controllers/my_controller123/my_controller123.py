@@ -26,6 +26,9 @@ range_finder.enable(timestep)
 motor1.setPosition(float('inf'))  
 motor2.setPosition(float('inf'))
 motor3.setPosition(float('inf'))
+#motor wrong side 
+forward_velocity = -1.0   
+backward_velocity = 1.0   
 
 
 broker = '192.168.178.121'
@@ -34,25 +37,23 @@ client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
 client = None
 topics = {}
- 
+#add speed instead of forward_velocity in implementation
 def MoveForward(speed, duration):
-    motor1.setVelocity(speed)
-    motor2.setVelocity(speed)
-    motor1.setTorque(8)
-    motor2.setTorque(8)
+    motor1.setVelocity(forward_velocity)
+    motor2.setVelocity(forward_velocity)
+
 
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
-    motor1.setTorque(0)
-    motor2.setTorque(0)
+
     motor1.setVelocity(0)
     motor2.setVelocity(0)
 
 def MoveBack(speed, duration):
-    motor1.setVelocity(-speed)
-    motor2.setVelocity(-speed)
+    motor1.setVelocity(backward_velocity)
+    motor2.setVelocity(backward_velocity)
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
@@ -61,23 +62,20 @@ def MoveBack(speed, duration):
     motor2.setVelocity(0)
 
 def SpinLeft(speed, duration):
-    motor1.setVelocity(-speed)
-    motor2.setVelocity(speed)
-    motor1.setTorque(8)
-    motor2.setTorque(8)
+    motor2.setVelocity(backward_velocity)
+    motor1.setVelocity(forward_velocity)
+    
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
-    motor1.setTorque(0)
-    motor2.setTorque(0)
     motor1.setVelocity(0)
     motor2.setVelocity(0)
     
 
 def SpinRight(speed, duration):
-    motor1.setVelocity(speed)
-    motor2.setVelocity(-speed)
+    motor1.setVelocity(backward_velocity)
+    motor2.setVelocity(forward_velocity)
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
@@ -105,10 +103,11 @@ def SpinTop(speed, duration):
         distance_image = range_finder.getRangeImage()
         distance_value = process_range_image(distance_image)
         distance_readings.append(distance_value)
+        
     motor3.setPosition(0)
-    motor3.setVelocity(0)
     print("LDR Readings:", ldr_readings)
     print("Distance Readings:", distance_readings)
+    #motor3.setVelocity(0)
 
 def process_range_image(image):
     if len(image) == 0:

@@ -10,6 +10,10 @@ orthographicViewHeight: 2.52211
 textFiles: 2 "controllers/Charriot/Charriot.py" "controllers/Central_server_py/Central_server_py.py" "controllers/my_controller123/my_controller123.py" "controllers/Central_server_py/backup.py"
 globalOptionalRendering: CameraFrustums::LightSensorRays::DistanceSensorRays::AllBoundingObjects::RangeFinderFrustums
 consoles: Console:All:All
+renderingDevicePerspectives: Charriot(1):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(2):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(3):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(4):range-finder;1;1;0;0
 renderingDevicePerspectives: Charriot:distance sensor;1;1;0;0
 renderingDevicePerspectives: Charriot:range-finder;1;1;0;0
 renderingDevicePerspectives: centrale_server:camera;1;0.438889;0;0
