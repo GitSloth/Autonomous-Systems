@@ -6,23 +6,22 @@ import threading
 robot = Robot()
 
 timestep = int(robot.getBasicTimeStep())
- 
+
+# Initialize motors and sensors
 motor1 = robot.getDevice('motor1')
 motor2 = robot.getDevice('motor2')
 motor3 = robot.getDevice('motor3')
-
-
-
-distanceSens = robot.getDevice('distance sensor')
+range_finder = robot.getDevice('range-finder')  # Changed to range-finder
 ldr = robot.getDevice('light sensor')
+
+# Set initial motor velocities
 motor1.setVelocity(0)
 motor2.setVelocity(0)
 motor3.setVelocity(0)
 
+# Enable sensors
 ldr.enable(timestep)
-distanceSens.enable(timestep)
-
-
+range_finder.enable(timestep)
  
 motor1.setPosition(float('inf'))  
 motor2.setPosition(float('inf'))
@@ -90,33 +89,35 @@ def SpinTop(speed, duration):
     ldr_readings = []
     distance_readings = []
     step_count = 10
-    angle_step = 180 / (step_count - 1)  
-    initial_position = -90   
+    angle_step = 180 / (step_count - 1)
+    initial_position = -90
     for step in range(step_count):
- 
         position_degrees = initial_position + step * angle_step
         position_radians = position_degrees * (3.14159 / 180)
-
- 
         motor3.setPosition(position_radians)
         motor3.setVelocity(speed)
-        
-        
-        end_time = robot.getTime() + duration  
+        end_time = robot.getTime() + duration
         while robot.getTime() < end_time:
             if robot.step(timestep) == -1:
                 break
-
- 
         ldr_value = ldr.getValue()
         ldr_readings.append(ldr_value)
-        
-        distance_value = distanceSens.getValue()
+        distance_image = range_finder.getRangeImage()
+        distance_value = process_range_image(distance_image)
         distance_readings.append(distance_value)
-
- 
     motor3.setPosition(0)
     motor3.setVelocity(0)
+    print("LDR Readings:", ldr_readings)
+    print("Distance Readings:", distance_readings)
+
+def process_range_image(image):
+    if len(image) == 0:
+        return float('inf')
+    min_distance = float('inf')
+    for distance in image:
+        if distance < min_distance:
+            min_distance = distance
+    return min_distance
 
  
     motor3.setPosition(0)

@@ -4,13 +4,14 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/floors/protos/RectangleArena.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/ConstructionLamp.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/factory/containers/protos/CardboardBox.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.03936465691384281 0.00293402473336856 -0.9992206039133297 2.9929143395823403
-  position 3.390087410503806 0.46967733562559755 0.5942404110830488
+  orientation 0.31157322129314174 0.16216931801504123 -0.9362816029739938 2.234686666554942
+  position 3.641307268054419 6.58803334084592 4.382029595637701
 }
 TexturedBackground {
   texture "noon_sunny_garden"
@@ -57,8 +58,8 @@ DEF Centrale_server Robot {
   supervisor TRUE
 }
 Robot {
-  translation 1.3999959324754456 0.0008835458799053564 -0.0484936106537333
-  rotation -0.9999994010571408 0.000991768784758171 -0.00046290391753507187 0.020823705326473832
+  translation 1.3999956731680796 0.003995321099915572 -0.07259997446465588
+  rotation 0.9999998880353832 0.00043466807049975337 -0.00018706386463294855 0.051078158987810304
   children [
     HingeJoint {
       jointParameters HingeJointParameters {
@@ -73,9 +74,9 @@ Robot {
       endPoint Solid {
         translation 0 -0.010000000000000009 0
         children [
-          DistanceSensor {
-            translation -0.02 0.35 0.79
-            rotation 0 0 -1 -1.5708053071795867
+          RangeFinder {
+            translation -0.02 0.32 0.76
+            rotation -3.69431e-07 -3.88407e-07 -1 -1.5708053071795867
           }
           LightSensor {
             translation -0.03 0.39 0.89
@@ -134,7 +135,7 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position -0.006746723144401834
+        position -0.006731698544524607
         anchor 0.41 0.34 0.29
       }
       device [
@@ -144,8 +145,8 @@ Robot {
         }
       ]
       endPoint Solid {
-        translation 0.40998574933038956 0.3398509808301368 0.2902631806721152
-        rotation -0.0032633995508744465 0.9999886137342624 -0.0034817560511777776 1.5712363031600372
+        translation 0.40998574933038956 0.3398509768759693 0.29026317843313215
+        rotation -0.0032558906350446766 0.999988664338424 -0.0034742439217159186 1.5712362541851728
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -164,7 +165,7 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position -0.00678081523847191
+        position -0.006765948620436347
         anchor -0.47 0.34 0.29
       }
       device [
@@ -174,8 +175,8 @@ Robot {
         }
       ]
       endPoint Solid {
-        translation -0.4700171891213426 0.3398319018589143 0.2902473730725171
-        rotation -0.0033069522463991976 0.9999885037828811 -0.0034722282348217865 1.5712565858002807
+        translation -0.4700171891213426 0.3398318981813319 0.29024737057343886
+        rotation -0.0032995224387295935 0.9999885541078046 -0.0034647950961984608 1.5712565366923117
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -201,7 +202,11 @@ Robot {
   }
   controller "my_controller123"
 }
+ConstructionLamp {
+  translation -5.81174e-07 1.52 0.79
+  rotation 0 0 1 -1.5707953071795862
+}
 CardboardBox {
-  size 1.1 0.9 1
-  mass 1
+  translation 1.49 1.38 0.3
+  rotation 0 0 1 4.692820414042842e-06
 }
