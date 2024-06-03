@@ -2,7 +2,8 @@ import cv2
 from cv2 import aruco
 from Camera import Camera
 import numpy as np
-import time
+from threading import Thread
+
 """
 to do:
 - calibrate for potential distortion (not really needed for webcam, posibly needed for phone)
@@ -15,7 +16,7 @@ potential
 class MarkerDetector:
     def __init__(self, camType=0, cameraSource=0, debug=False):
         self.DEBUG = debug
-        self.cam = cv2.VideoCapture(camType, cameraSource)
+        self.cam = Camera(camType, cameraSource)
         self.markerInfoList = []
 
         # Setup marker detection
@@ -27,6 +28,10 @@ class MarkerDetector:
         if self.DEBUG:
             cv2.namedWindow("Output", cv2.WINDOW_AUTOSIZE)
             cv2.namedWindow("Rejected", cv2.WINDOW_AUTOSIZE)
+        
+        self.thread = Thread(target=self.detectMarkers, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
     def calculateAngle(self, corner1, corner2):
         """
@@ -45,15 +50,11 @@ class MarkerDetector:
         Get the position from the markers using image from cam.
         :return: returns markerInfo
         """
-        ret, input = self.cam.read()
-        if not ret:
-            print("Error getting frame from cam.")
-            return None
+        input = self.cam.getImage()
 
         markersCorners, markersId, rejectedCandidates = self.detector.detectMarkers(input)
 
-        output = input.copy()
-        aruco.drawDetectedMarkers(output, markersCorners, markersId)
+        aruco.drawDetectedMarkers(input, markersCorners, markersId)
         if markersId is not None:
             markers = sorted(zip(markersId, markersCorners), key=lambda x: x[0])
             for markerId, corners in markers:
@@ -61,8 +62,8 @@ class MarkerDetector:
                 corners = corners.reshape((4, 2))
                 centerX = int(corners[:, 0].mean())
                 centerY = int(corners[:, 1].mean())
-                # Optionally, draw the center point on the output image
-                cv2.circle(output, (centerX, centerY), 5, (0, 255, 0), -1)
+                # Optionally, draw the center point on the input image
+                cv2.circle(input, (centerX, centerY), 5, (0, 255, 0), -1)
                 # Calculate the angle of the marker
                 topLeft = corners[0]
                 topRight = corners[1]
@@ -88,14 +89,16 @@ class MarkerDetector:
                 arrow_length = 50  # Length of the arrow
                 endX = int(centerX + arrow_length * np.cos(np.radians(angle)))
                 endY = int(centerY + arrow_length * np.sin(np.radians(angle)))
-                cv2.arrowedLine(output, (centerX, centerY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
+                cv2.arrowedLine(input, (centerX, centerY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
 
             if self.DEBUG:
                 rejected = input.copy()
+                aruco.drawDetectedMarkers(input, markersCorners, markersId)
                 aruco.drawDetectedMarkers(rejected, rejectedCandidates, borderColor=(100, 0, 255))
-                cv2.imshow("Output", output)
+                cv2.imshow("Output", input)
                 cv2.imshow("Rejected", rejected)
 
+    def getMarkerPositions(self):
         return self.markerInfoList
 
     def releaseResources(self):
@@ -104,11 +107,13 @@ class MarkerDetector:
 
 # Example usage:
 if __name__ == "__main__":
-    detector = MarkerDetector(cameraSource=0,camType=0,debug=False)
+    detector = MarkerDetector(cameraSource=0, camType=0, debug=False)
     
-    markerInfoList = detector.detectMarkers()
-    for markerInfo in markerInfoList:
-        print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
+    while(True):
+        markerInfoList = detector.getMarkerPositions()
+        print("looped")
+        for markerInfo in markerInfoList:
+            print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
     detector.releaseResources()
 # DEBUG = False
 
