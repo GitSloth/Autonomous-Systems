@@ -2,8 +2,7 @@ import cv2
 from cv2 import aruco
 from Camera import Camera
 import numpy as np
-from threading import Thread
-
+import time
 """
 to do:
 - calibrate for potential distortion (not really needed for webcam, posibly needed for phone)
@@ -28,10 +27,6 @@ class MarkerDetector:
         if self.DEBUG:
             cv2.namedWindow("Output", cv2.WINDOW_AUTOSIZE)
             cv2.namedWindow("Rejected", cv2.WINDOW_AUTOSIZE)
-        
-        self.thread = Thread(target=self.detectMarkers, args=())
-        self.thread.daemon = True
-        self.thread.start()
 
     def calculateAngle(self, corner1, corner2):
         """
@@ -97,8 +92,6 @@ class MarkerDetector:
                 aruco.drawDetectedMarkers(rejected, rejectedCandidates, borderColor=(100, 0, 255))
                 cv2.imshow("Output", input)
                 cv2.imshow("Rejected", rejected)
-
-    def getMarkerPositions(self):
         return self.markerInfoList
 
     def releaseResources(self):
@@ -110,11 +103,16 @@ if __name__ == "__main__":
     detector = MarkerDetector(cameraSource=0, camType=0, debug=False)
     
     while(True):
-        markerInfoList = detector.getMarkerPositions()
-        print("looped")
-        for markerInfo in markerInfoList:
-            print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
+        beginTime = time.time_ns()
+        markerInfoList = detector.detectMarkers()
+        endTime = (time.time_ns() -  beginTime) / 1000000
+
+        #print(f"endtime: {endTime}")
+        if markerInfoList is not None:
+            for markerInfo in markerInfoList:
+                print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
     detector.releaseResources()
+
 # DEBUG = False
 
 # def calculate_angle(corner1, corner2):
