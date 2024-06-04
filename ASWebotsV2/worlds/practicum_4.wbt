@@ -4,25 +4,23 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/floors/protos/RectangleArena.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/appearances/protos/Parquetry.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/ConstructionLamp.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/factory/containers/protos/CardboardBox.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/FloorLight.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.2963976073918065 -0.29111620357506124 -0.9096152012518568 4.599913946533088
-  position 2.208927561728155 -4.719031516065092 4.482237547516655
+  orientation 0.23392489150084056 -0.3570358099926752 -0.9043254809631288 5.029221261773185
+  position -2.0657489178068777 -3.2738378720252506 2.7735017351603526
 }
 TexturedBackground {
-  texture "noon_sunny_garden"
+  texture "dusk"
 }
 TexturedBackgroundLight {
   castShadows FALSE
 }
 RectangleArena {
   translation 0.45 0.45 0
-  rotation 0 1 0 0
-  floorSize 50 50
+  floorSize 30 30
   floorTileSize 1 1
   floorAppearance Parquetry {
     type "dark strip"
@@ -32,7 +30,7 @@ RectangleArena {
   wallHeight 0.02
 }
 DEF Centrale_server Robot {
-  translation -1.55 0 0.63
+  translation -2.6 0 2.23
   children [
     Solid {
       children [
@@ -58,7 +56,7 @@ DEF Centrale_server Robot {
   supervisor TRUE
 }
 Robot {
-  translation 1.4 -0.0235749 0.466697
+  translation 1.71 -0.0291944 0.576547
   rotation 0.9999998880353832 0.00043466807049975337 -0.00018706386463294855 0.051078158987810304
   children [
     HingeJoint {
@@ -77,6 +75,8 @@ Robot {
           RangeFinder {
             translation -0.02 0.32 0.76
             rotation -3.69431e-07 -3.88407e-07 -1 -1.5708053071795867
+            fieldOfView 0.1
+            maxRange 14
           }
           LightSensor {
             translation -0.03 0.39 0.89
@@ -92,6 +92,9 @@ Robot {
             children [
               Shape {
                 appearance PBRAppearance {
+                  baseColor 0 0.1 0.2
+                  roughness 1
+                  metalness 0
                 }
                 geometry Mesh {
                   url [
@@ -122,7 +125,8 @@ Robot {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0 0.215686 1
+            baseColor 0 0.1 0.2
+            roughness 1
             metalness 0
           }
           geometry Mesh {
@@ -146,10 +150,12 @@ Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3398509768759693 0.290263178433132
-        rotation -0.003255890635043968 0.9999886643384238 -0.0034742439217157906 1.571236254185163
+        rotation -0.00325589063504398 0.9999886643384238 -0.0034742439217157785 1.571236254185163
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -176,10 +182,12 @@ Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.33983189818133197 0.2902473705734389
-        rotation -0.0032995224387288666 0.9999885541078046 -0.003464795096198855 1.5712565366923086
+        rotation -0.0032995224387288875 0.9999885541078046 -0.003464795096198858 1.5712565366923086
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -203,7 +211,7 @@ Robot {
   controller "my_controller123"
 }
 Robot {
-  translation 2.41 -0.023584 0.566697
+  translation 3.12 -0.0235911 0.566686
   rotation 0.9999998880353832 0.00043466807049975337 -0.00018706386463294855 0.051078158987810304
   children [
     HingeJoint {
@@ -222,6 +230,8 @@ Robot {
           RangeFinder {
             translation -0.02 0.32 0.76
             rotation -3.69431e-07 -3.88407e-07 -1 -1.5708053071795867
+            fieldOfView 0.1
+            maxRange 14
           }
           LightSensor {
             translation -0.03 0.39 0.89
@@ -237,6 +247,9 @@ Robot {
             children [
               Shape {
                 appearance PBRAppearance {
+                  baseColor 0 0.1 0.2
+                  roughness 1
+                  metalness 0
                 }
                 geometry Mesh {
                   url [
@@ -267,7 +280,8 @@ Robot {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0 0.215686 1
+            baseColor 0 0.1 0.2
+            roughness 1
             metalness 0
           }
           geometry Mesh {
@@ -291,10 +305,12 @@ Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3398509768759693 0.290263178433132
-        rotation -0.003255890635043968 0.9999886643384238 -0.0034742439217157906 1.571236254185163
+        rotation -0.00325589063504398 0.9999886643384238 -0.0034742439217157785 1.571236254185163
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -321,10 +337,12 @@ Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.33983189818133197 0.2902473705734389
-        rotation -0.0032995224387288666 0.9999885541078046 -0.003464795096198855 1.5712565366923086
+        rotation -0.0032995224387288875 0.9999885541078046 -0.003464795096198858 1.5712565366923086
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -367,6 +385,8 @@ Robot {
           RangeFinder {
             translation -0.02 0.32 0.76
             rotation -3.69431e-07 -3.88407e-07 -1 -1.5708053071795867
+            fieldOfView 0.1
+            maxRange 14
           }
           LightSensor {
             translation -0.03 0.39 0.89
@@ -382,6 +402,9 @@ Robot {
             children [
               Shape {
                 appearance PBRAppearance {
+                  baseColor 0 0.1 0.2
+                  roughness 1
+                  metalness 0
                 }
                 geometry Mesh {
                   url [
@@ -412,7 +435,8 @@ Robot {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0 0.215686 1
+            baseColor 0 0.1 0.2
+            roughness 1
             metalness 0
           }
           geometry Mesh {
@@ -436,10 +460,12 @@ Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3398509768759693 0.290263178433132
-        rotation -0.003255890635043968 0.9999886643384238 -0.0034742439217157906 1.571236254185163
+        rotation -0.00325589063504398 0.9999886643384238 -0.0034742439217157785 1.571236254185163
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -466,10 +492,12 @@ Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.33983189818133197 0.2902473705734389
-        rotation -0.0032995224387288666 0.9999885541078046 -0.003464795096198855 1.5712565366923086
+        rotation -0.0032995224387288875 0.9999885541078046 -0.003464795096198858 1.5712565366923086
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -493,7 +521,7 @@ Robot {
   controller "my_controller123"
 }
 Robot {
-  translation 3.52 -0.0235951 0.566695
+  translation 4.46 -0.0236039 0.566678
   rotation 0.9999998880353832 0.00043466807049975337 -0.00018706386463294855 0.051078158987810304
   children [
     HingeJoint {
@@ -527,6 +555,9 @@ Robot {
             children [
               Shape {
                 appearance PBRAppearance {
+                  baseColor 0 0.1 0.2
+                  roughness 1
+                  metalness 0
                 }
                 geometry Mesh {
                   url [
@@ -557,7 +588,8 @@ Robot {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0 0.215686 1
+            baseColor 0 0.1 0.2
+            roughness 1
             metalness 0
           }
           geometry Mesh {
@@ -581,10 +613,12 @@ Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3398509768759693 0.290263178433132
-        rotation -0.003255890635043968 0.9999886643384238 -0.0034742439217157906 1.571236254185163
+        rotation -0.00325589063504398 0.9999886643384238 -0.0034742439217157785 1.571236254185163
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -611,10 +645,12 @@ Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.33983189818133197 0.2902473705734389
-        rotation -0.0032995224387288666 0.9999885541078046 -0.003464795096198855 1.5712565366923086
+        rotation -0.0032995224387288875 0.9999885541078046 -0.003464795096198858 1.5712565366923086
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -638,9 +674,22 @@ Robot {
   controller "my_controller123"
 }
 Robot {
-  translation -0.72 -0.0235528 0.566699
+  translation -1.06 -0.0235495 0.566703
   rotation 0.9999998880353832 0.00043466807049975337 -0.00018706386463294855 0.051078158987810304
   children [
+    Transform {
+      translation -0.03 -0.27 0.61
+      children [
+        Shape {
+          appearance PBRAppearance {
+            transparency 1
+          }
+          geometry Box {
+            size 0.7 0.7 0.7
+          }
+        }
+      ]
+    }
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 0 1
@@ -657,6 +706,8 @@ Robot {
           RangeFinder {
             translation -0.02 0.32 0.76
             rotation -3.69431e-07 -3.88407e-07 -1 -1.5708053071795867
+            fieldOfView 0.1
+            maxRange 14
           }
           LightSensor {
             translation -0.03 0.39 0.89
@@ -672,6 +723,9 @@ Robot {
             children [
               Shape {
                 appearance PBRAppearance {
+                  baseColor 0 0.1 0.2
+                  roughness 1
+                  metalness 0
                 }
                 geometry Mesh {
                   url [
@@ -702,7 +756,8 @@ Robot {
       children [
         Shape {
           appearance PBRAppearance {
-            baseColor 0 0.215686 1
+            baseColor 0 0.1 0.2
+            roughness 1
             metalness 0
           }
           geometry Mesh {
@@ -726,10 +781,12 @@ Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3398509768759693 0.290263178433132
-        rotation -0.003255890635043968 0.9999886643384238 -0.0034742439217157906 1.571236254185163
+        rotation -0.003255890635044009 0.999988664338424 -0.003474243921715786 1.5712362541851546
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -756,10 +813,12 @@ Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.33983189818133197 0.2902473705734389
-        rotation -0.0032995224387288666 0.9999885541078046 -0.003464795096198855 1.5712565366923086
+        rotation -0.003299522438728887 0.9999885541078046 -0.0034647950961988537 1.5712565366923048
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
               metalness 0
             }
             geometry Cylinder {
@@ -782,11 +841,9 @@ Robot {
   }
   controller "my_controller123"
 }
-ConstructionLamp {
-  translation -5.81174e-07 1.52 0.79
-  rotation 0 0 1 -1.5707953071795862
-}
-CardboardBox {
-  translation 1.49 1.38 0.3
-  rotation 0 0 1 4.692820414042842e-06
+FloorLight {
+  translation 0.31 7.51 0
+  scale 0.55
+  pointLightIntensity 10
+  pointLightRadius 200
 }
