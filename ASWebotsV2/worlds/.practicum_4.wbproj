@@ -8,7 +8,6 @@ centralWidgetVisible: 1
 projectionMode: PERSPECTIVE
 orthographicViewHeight: 2.52211
 textFiles: 0 "controllers/Central_server_py/Central_server_py.py" "controllers/my_controller123/my_controller123.py"
-robotWindow: centrale_server
 globalOptionalRendering: CameraFrustums::LightSensorRays::DistanceSensorRays::RangeFinderFrustums
 consoles: Console:All:All
 consoles: Console:All:All

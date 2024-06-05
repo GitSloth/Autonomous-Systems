@@ -11,13 +11,16 @@ CAMERA_ATTACHED = False
 if CAMERA_ATTACHED:
     marker_detection = MarkerDetector(cameraSource=0, camType=0, debug=False)
 
-#define on connect
+
+webotscam_attatched = True
+if webotscam_attatched:
+    marker_detection = MarkerDetector(cameraSource='localhost:5000/video_feed', camType=2, debug=False)
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Server connected to MQTT Broker!")
         client.subscribe("server/info")
         client.subscribe("swarm/register")
-        
     else:
         print("Failed to connect, return code", rc)
 
@@ -38,37 +41,36 @@ def on_message(client, userdata, msg):
         if payload == "start":
             print("Received 'start' message on 'server/info' topic")
             setup_bots(client)
+        else:
+            print("make the convo brief")
+
+            
 
 
-    # def setup_bots(client, threshold=10):
-    # '''
-    # get list of connected bots. get initial positions. move one bot. get positions. mark bot that moved as the marker id. save to real_bots. 
-    # '''
-    # if CAMERA_ATTACHED:
-    #     print("Connected bots")
-    #     print("Connected bots")
-    #     for bot in connected_bots:
-    #         marker_list = marker_detection.detectMarkers()
-    #         client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
-    #         time.sleep(2)
-    #         new_marker_list = marker_detection.detectMarkers()
-
-    #         for i in range(len(marker_list)):
-    #             old_position = marker_list[i]['position']
-    #             new_position = new_marker_list[i]['position']
-    #             delta_x = abs(new_position[0] - old_position[0])
-    #             delta_y = abs(new_position[1] - old_position[1])
-    #             if delta_x > threshold or delta_y > threshold:
-    #                 real_bots.append({
-    #                     'robot_id': bot,
-    #                     'marker_id': marker_list[i]['id'] 
-    #                 })
-    # else:
-    #     print("tandpasta")
 def setup_bots(client, threshold=10):
-     print("Connected bots")
-     for bot in connected_bots:
-        print(bot)
+    if CAMERA_ATTACHED:
+        print("Connected bots")
+        for bot in connected_bots:
+            while True:  # Continuously detect markers and move the robot
+                marker_list = marker_detection.detectMarkers()
+                client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
+                time.sleep(2)
+                new_marker_list = marker_detection.detectMarkers()
+
+                for i in range(len(marker_list)):
+                    old_position = marker_list[i]['position']
+                    new_position = new_marker_list[i]['position']
+                    delta_x = abs(new_position[0] - old_position[0])
+                    delta_y = abs(new_position[1] - old_position[1])
+                    if delta_x > threshold or delta_y > threshold:
+                        real_bots.append({
+                            'robot_id': bot,
+                            'marker_id': marker_list[i]['id'] 
+                        })
+                break  # Exit the loop after one iteration to move to the next robot or next execution of setup_bots
+    else:
+        print("Camera not attached")
+
 
 def connect_mqtt():
     
