@@ -99,19 +99,19 @@ class MarkerDetector:
         cv2.destroyAllWindows()
 
 # Example usage:
-if __name__ == "__main__":
-    detector = MarkerDetector(cameraSource=0, camType=0, debug=False)
+# if __name__ == "__main__":
+#     detector = MarkerDetector(cameraSource=0, camType=0, debug=False)
     
-    while(True):
-        beginTime = time.time_ns()
-        markerInfoList = detector.detectMarkers()
-        endTime = (time.time_ns() -  beginTime) / 1000000
+#     while(True):
+#         beginTime = time.time_ns()
+#         markerInfoList = detector.detectMarkers()
+#         endTime = (time.time_ns() -  beginTime) / 1000000
 
-        #print(f"endtime: {endTime}")
-        if markerInfoList is not None:
-            for markerInfo in markerInfoList:
-                print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
-    detector.releaseResources()
+#         #print(f"endtime: {endTime}")
+#         if markerInfoList is not None:
+#             for markerInfo in markerInfoList:
+#                 print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
+#     detector.releaseResources()
 
 # DEBUG = False
 

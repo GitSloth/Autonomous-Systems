@@ -9,12 +9,12 @@ connected_bots = []
 real_bots = []
 CAMERA_ATTACHED = False
 if CAMERA_ATTACHED:
-    marker_detection = MarkerDetector(cameraSource=0, camType=0, debug=False)
+    marker_detection = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
 
 
-webotscam_attatched = True
-if webotscam_attatched:
-    marker_detection = MarkerDetector(cameraSource='localhost:5000/video_feed', camType=2, debug=False)
+# webotscam_attatched = True
+# if webotscam_attatched:
+#     marker_detection = MarkerDetector(cameraSource='localhost:5000/video_feed', camType=2, debug=False)
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
