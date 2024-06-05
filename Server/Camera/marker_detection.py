@@ -1,6 +1,6 @@
 import cv2
 from cv2 import aruco
-from Camera import Camera
+from .Camera import Camera
 import numpy as np
 import time
 """
@@ -100,7 +100,7 @@ class MarkerDetector:
 
 # Example usage:
 # if __name__ == "__main__":
-#     detector = MarkerDetector(cameraSource=0, camType=0, debug=False)
+#     detector  = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
     
 #     while(True):
 #         beginTime = time.time_ns()

@@ -1,15 +1,16 @@
 import time
 from paho.mqtt import client as mqtt_client
 from Camera.marker_detection import MarkerDetector
+from Camera.Camera import Camera
 # connecting to the server 
 broker = 'localhost'
 port = 1883
 client_id = 'server'
 connected_bots = []
 real_bots = []
-CAMERA_ATTACHED = False
+CAMERA_ATTACHED = True
 if CAMERA_ATTACHED:
-    marker_detection = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
+    detector  = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
 
 
 # webotscam_attatched = True
@@ -52,20 +53,20 @@ def setup_bots(client, threshold=10):
         print("Connected bots")
         for bot in connected_bots:
             while True:  # Continuously detect markers and move the robot
-                marker_list = marker_detection.detectMarkers()
+                markerInfoList = detector.detectMarkers()
                 client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
                 time.sleep(2)
-                new_marker_list = marker_detection.detectMarkers()
+                new_marker_list = markerInfoList.detectMarkers()
 
-                for i in range(len(marker_list)):
-                    old_position = marker_list[i]['position']
+                for i in range(len(markerInfoList)):
+                    old_position = markerInfoList[i]['position']
                     new_position = new_marker_list[i]['position']
                     delta_x = abs(new_position[0] - old_position[0])
                     delta_y = abs(new_position[1] - old_position[1])
                     if delta_x > threshold or delta_y > threshold:
                         real_bots.append({
                             'robot_id': bot,
-                            'marker_id': marker_list[i]['id'] 
+                            'marker_id': markerInfoList[i]['id'] 
                         })
                 break  # Exit the loop after one iteration to move to the next robot or next execution of setup_bots
     else:
