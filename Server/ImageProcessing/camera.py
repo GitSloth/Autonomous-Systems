@@ -20,6 +20,11 @@ class Camera:
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             self.frame = np.zeros((1280,720, 3), dtype = np.uint8)
+            self.FPS = 1/60
+            self.FPS_MS = int(self.FPS * 1000)
+            self.thread = Thread(target=self.update, args=())
+            self.thread.daemon = True
+            self.thread.start()
         if self.camType == 1: #not used rn
             self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW)
             self.frame = np.zeros((1920,1080, 3), dtype = np.uint8)
@@ -27,12 +32,13 @@ class Camera:
             self.capture = cv2.VideoCapture(source)
             self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             self.frame = np.zeros((1280,720, 3), dtype = np.uint8)
+            #self.FPS = 1/60
+            #self.FPS_MS = int(self.FPS * 1000)
+            self.thread = Thread(target=self.update, args=())
+            self.thread.daemon = True
+            self.thread.start()
 
-        self.FPS = 1/60
-        self.FPS_MS = int(self.FPS * 1000)
-        self.thread = Thread(target=self.update, args=())
-        self.thread.daemon = True
-        self.thread.start()
+        
 
     def update(self):
         self.index = 0
@@ -43,7 +49,8 @@ class Camera:
             
             if self.capture.isOpened():
                 (self.status, self.frame) =  self.capture.read()
-            time.sleep(self.FPS)
+            #if self.camType == 0:
+            #   time.sleep(self.FPS)
  
     
     def show_frame(self):

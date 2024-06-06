@@ -43,7 +43,6 @@ DEF Centrale_server Robot {
       height 720
       far 35
       exposure 2
-      antiAliasing TRUE
     }
     Solid {
       children [
