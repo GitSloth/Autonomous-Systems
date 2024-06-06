@@ -1,21 +1,22 @@
 import time
 from paho.mqtt import client as mqtt_client
-from Camera.marker_detection import MarkerDetector
-from Camera.Camera import Camera
+
+from ImageProcessing.marker_detection import MarkerDetector
+ # This ensures Camera is imported
 # connecting to the server 
 broker = 'localhost'
 port = 1883
 client_id = 'server'
 connected_bots = []
 real_bots = []
-CAMERA_ATTACHED = True
+
+CAMERA_ATTACHED = False
 if CAMERA_ATTACHED:
-    detector  = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
-
-
-# webotscam_attatched = True
-# if webotscam_attatched:
-#     marker_detection = MarkerDetector(cameraSource='localhost:5000/video_feed', camType=2, debug=False)
+    detector  = MarkerDetector(cameraSource=0, camType=0, debug=False)
+    print("cam")
+WEBOTSCAM_ATTACHED = True
+#if WEBOTSCAM_ATTACHED:
+#    webots_detector = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -49,28 +50,91 @@ def on_message(client, userdata, msg):
 
 
 def setup_bots(client, threshold=10):
+    global connected_bots
+    global real_bots
+    global detector
+    global webots_detector
+    all_marker_info = []
+    print(connected_bots)
+    if len(connected_bots) < 1:
+        print("no bots")
+        return
     if CAMERA_ATTACHED:
-        print("Connected bots")
-        for bot in connected_bots:
-            while True:  # Continuously detect markers and move the robot
-                markerInfoList = detector.detectMarkers()
-                client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
-                time.sleep(2)
-                new_marker_list = markerInfoList.detectMarkers()
+        print("Detecting markers from the real camera...")
+        markerInfoList = detector.detectMarkers()
+        all_marker_info = markerInfoList
+        
 
-                for i in range(len(markerInfoList)):
-                    old_position = markerInfoList[i]['position']
-                    new_position = new_marker_list[i]['position']
-                    delta_x = abs(new_position[0] - old_position[0])
-                    delta_y = abs(new_position[1] - old_position[1])
-                    if delta_x > threshold or delta_y > threshold:
-                        real_bots.append({
-                            'robot_id': bot,
-                            'marker_id': markerInfoList[i]['id'] 
-                        })
-                break  # Exit the loop after one iteration to move to the next robot or next execution of setup_bots
-    else:
-        print("Camera not attached")
+    if WEBOTSCAM_ATTACHED:
+        print("Detecting markers from the Webots camera...")
+        webots_detector = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
+        all_marker_info.append(webots_detector.detectMarkers())
+        
+        #all_marker_info.extend(markerInfoList)
+    print(f"Markers: {len(all_marker_info)}")
+    # Process combined marker info list
+    for bot in connected_bots:
+        new_marker_list = []
+        client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
+        client.loop()  # Force the network loop to process the message immediately
+        time.sleep(5)
+        # start_time = time.time()
+        # while True:
+        #     current_time = time.time()
+        #     if current_time - start_time > 2:
+        #         break
+
+        
+        
+        if CAMERA_ATTACHED:
+            new_marker_list = detector.detectMarkers()
+
+        if WEBOTSCAM_ATTACHED:
+            #new_marker_list.extend(webots_detector.detectMarkers())
+            new_marker_list = webots_detector.detectMarkers()
+        print(new_marker_list)
+        '''
+        i am losing my mind.. het image en marker gedeelte werkt soort van.
+        alleen de vergelijking werkt niet omdat ik een beetje retarded ben
+        '''
+        for i in range(len(all_marker_info)):
+            old_position = markerInfoList[i]['position']
+            new_position = new_marker_list[i]['position']
+            delta_x = abs(new_position[0] - old_position[0])
+            delta_y = abs(new_position[1] - old_position[1])
+            if delta_x > threshold or delta_y > threshold:
+                real_bots.append({
+                    'robot_id': bot,
+                    'marker_id': new_marker_list[i]['id']
+                })
+        all_marker_info = new_marker_list
+
+    if real_bots is not None:
+            for combo in real_bots:
+                print(f"Robot_id: {combo['robot_id']}, marker_id: {combo['marker_id']}")
+    # print("Combined marker information:", real_bots)
+    # if CAMERA_ATTACHED:
+    #     print("Connected bots")
+    #     for bot in connected_bots:
+    #         while True:  # Continuously detect markers and move the robot
+    #             markerInfoList = detector.detectMarkers()
+    #             client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
+    #             time.sleep(2)
+    #             new_marker_list = detector.detectMarkers()
+
+    #             for i in range(len(markerInfoList)):
+    #                 old_position = markerInfoList[i]['position']
+    #                 new_position = new_marker_list[i]['position']
+    #                 delta_x = abs(new_position[0] - old_position[0])
+    #                 delta_y = abs(new_position[1] - old_position[1])
+    #                 if delta_x > threshold or delta_y > threshold:
+    #                     real_bots.append({
+    #                         'robot_id': bot,
+    #                         'marker_id': markerInfoList[i]['id'] 
+    #                     })
+    #             break  # Exit the loop after one iteration to move to the next robot or next execution of setup_bots
+    # else:
+    #     print("Camera not attached")
 
 
 def connect_mqtt():

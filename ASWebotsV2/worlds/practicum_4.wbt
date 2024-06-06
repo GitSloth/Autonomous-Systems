@@ -65,7 +65,7 @@ DEF Centrale_server Robot {
     }
   ]
   name "centrale_server"
-  controller "Central_server_py"
+  controller "Camera"
   supervisor TRUE
 }
 Robot {

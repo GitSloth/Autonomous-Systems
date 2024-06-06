@@ -1,15 +1,12 @@
 import cv2
 from cv2 import aruco
-from .Camera import Camera
+from .camera import Camera
 import numpy as np
 import time
 """
 to do:
 - calibrate for potential distortion (not really needed for webcam, posibly needed for phone)
-- fix angle calculation for drawing on image(might not be neccesarry)
-potential
-- store/return data for broadcasting
-- turn into class
+- enable both simulation and camera?
 """
 
 class MarkerDetector:
@@ -57,8 +54,8 @@ class MarkerDetector:
                 corners = corners.reshape((4, 2))
                 centerX = int(corners[:, 0].mean())
                 centerY = int(corners[:, 1].mean())
-                # Optionally, draw the center point on the input image
-                cv2.circle(input, (centerX, centerY), 5, (0, 255, 0), -1)
+                if self.DEBUG:
+                    cv2.circle(input, (centerX, centerY), 5, (0, 255, 0), -1)
                 # Calculate the angle of the marker
                 topLeft = corners[0]
                 topRight = corners[1]
@@ -80,18 +77,18 @@ class MarkerDetector:
                         'angle': angle
                     })
 
+            if self.DEBUG:
                 # Draw an arrow indicating the orientation of the marker
                 arrow_length = 50  # Length of the arrow
                 endX = int(centerX + arrow_length * np.cos(np.radians(angle)))
                 endY = int(centerY + arrow_length * np.sin(np.radians(angle)))
                 cv2.arrowedLine(input, (centerX, centerY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
-
-            if self.DEBUG:
                 rejected = input.copy()
                 aruco.drawDetectedMarkers(input, markersCorners, markersId)
                 aruco.drawDetectedMarkers(rejected, rejectedCandidates, borderColor=(100, 0, 255))
                 cv2.imshow("Output", input)
                 cv2.imshow("Rejected", rejected)
+                cv2.waitKey(1)  # Ensure the images are updated
         return self.markerInfoList
 
     def releaseResources(self):
@@ -99,19 +96,19 @@ class MarkerDetector:
         cv2.destroyAllWindows()
 
 # Example usage:
-# if __name__ == "__main__":
-#     detector  = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
+if __name__ == "__main__":
+    detector  = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=True)
     
-#     while(True):
-#         beginTime = time.time_ns()
-#         markerInfoList = detector.detectMarkers()
-#         endTime = (time.time_ns() -  beginTime) / 1000000
+    while(True):
+        beginTime = time.time_ns()
+        markerInfoList = detector.detectMarkers()
+        endTime = (time.time_ns() -  beginTime) / 1000000
 
-#         #print(f"endtime: {endTime}")
-#         if markerInfoList is not None:
-#             for markerInfo in markerInfoList:
-#                 print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
-#     detector.releaseResources()
+        #print(f"endtime: {endTime}")
+        if markerInfoList is not None:
+            for markerInfo in markerInfoList:
+                print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
+    detector.releaseResources()
 
 # DEBUG = False
 

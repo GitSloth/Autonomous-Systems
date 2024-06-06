@@ -5,7 +5,7 @@ import platform
 
 class Camera:
     CAMERA = 0
-    VIDEO = 1
+    VIDEO = 1 #not really used rn
     WEB = 2
 
     def __init__(self,camType,source=0):
@@ -20,7 +20,7 @@ class Camera:
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             self.frame = np.zeros((1280,720, 3), dtype = np.uint8)
-        if self.camType == 1:
+        if self.camType == 1: #not used rn
             self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW)
             self.frame = np.zeros((1920,1080, 3), dtype = np.uint8)
         if self.camType == 2:
@@ -36,7 +36,7 @@ class Camera:
 
     def update(self):
         self.index = 0
-        self.timeDinge = time.time
+        #self.timeDinge = time.time
         while True:
             if self.threadWait:
                 continue
