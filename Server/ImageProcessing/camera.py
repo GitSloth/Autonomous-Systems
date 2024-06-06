@@ -49,6 +49,7 @@ class Camera:
             
             if self.capture.isOpened():
                 (self.status, self.frame) =  self.capture.read()
+                
             #if self.camType == 0:
             #   time.sleep(self.FPS)
  
@@ -62,5 +63,3 @@ class Camera:
     
     def release(self):
         self.capture.release()
-
-    

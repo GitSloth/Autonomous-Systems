@@ -42,7 +42,7 @@ def on_message(client, userdata, msg):
         payload = msg.payload.decode()
         if payload == "start":
             print("Received 'start' message on 'server/info' topic")
-            setup_bots(client)
+            #setup_bots(client)
         else:
             print("make the convo brief")
 
