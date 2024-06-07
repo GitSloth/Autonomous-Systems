@@ -26,51 +26,13 @@ services:
       - "1884:1884"
       - "9001:9001"
 
-
- #--------------- gotta delete after v 
   mqtt_connect:
-    build: .
+    build:
+      context: .
+      dockerfile: dockerfile
     command: python MQTTConnect.py
     volumes:
       - .:/app
-    network_mode: "host"  # Allow the container to use the host network
+    network_mode: "host"
     depends_on:
       - mosquitto
-
-  # robot1:
-  #   build: .
-  #   command: python robot.py
-  #   volumes:
-  #     - .:/app
-  #   network_mode: "host"  # Allow the container to use the host network
-  #   depends_on:
-  #     - mosquitto
-  #     - mqtt_connect
-  # robot2:
-  #   build: .
-  #   command: python robot.py
-  #   volumes:
-  #     - .:/app
-  #   network_mode: "host"  # Allow the container to use the host network
-  #   depends_on:
-  #     - mosquitto
-  #     - mqtt_connect
-  # robot3:
-  #   build: .
-  #   command: python robot.py
-  #   volumes:
-  #     - .:/app
-  #   network_mode: "host"  # Allow the container to use the host network
-  #   depends_on:
-  #     - mosquitto
-  #     - mqtt_connect
-  # robot4:
-  #   build: .
-  #   command: python robot.py
-  #   volumes:
-  #     - .:/app
-  #   network_mode: "host"  # Allow the container to use the host network
-  #   depends_on:
-  #     - mosquitto
-  #     - mqtt_connect
-  

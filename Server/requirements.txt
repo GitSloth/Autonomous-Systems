@@ -1,4 +1,4 @@
 paho-mqtt==1.5.1
+opencv-python==4.5.3
 numpy
-opencv-python==4.9.0.80
-opencv-contrib-python      
+
