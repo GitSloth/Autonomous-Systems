@@ -35,6 +35,7 @@ broker = 'localhost'
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
+topic_cheese = "server/info"
 client = None
 topics = {}
 #add speed instead of forward_velocity in implementation

@@ -19,7 +19,7 @@ def start_camera():
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector = MarkerDetector2(cameraSource1=0, camType1=0, enableCam2=False, cameraSource2='http://localhost:5005/video_feed', camType2=2, debug=True)
+    detector = MarkerDetector2(cameraSource1=0, camType1=0, enableCam2=True, cameraSource2='http://localhost:5005/video_feed', camType2=2, debug=True)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
@@ -31,7 +31,7 @@ def on_connect(client, userdata, flags, rc):
         print("Failed to connect, return code", rc)
 
 def on_message(client, userdata, msg):
-    print(f"printers")
+    print(f"say wagwan my g")
     global next_robot_id
     if msg.topic == "swarm/register":
         robot_id = msg.payload.decode()

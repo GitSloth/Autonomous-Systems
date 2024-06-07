@@ -29,7 +29,6 @@ services:
   mqtt_connect:
     build:
       context: .
-      dockerfile: dockerfile
     command: python MQTTConnect.py
     volumes:
       - .:/app
