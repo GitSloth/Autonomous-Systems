@@ -1,6 +1,6 @@
 import cv2
 from cv2 import aruco
-from camera import Camera
+from .camera import Camera
 import numpy as np
 import time
 """
@@ -16,7 +16,7 @@ class MarkerDetector2:
         self.cam1 = Camera(camType1, cameraSource1)
         if self.enableCam2:
             self.cam2= Camera(camType2, cameraSource2)
-        self.markerInfoList = []
+        
 
         # Setup marker detection
         self.detectorParams = aruco.DetectorParameters()
@@ -43,92 +43,6 @@ class MarkerDetector2:
         angleRad = np.arctan2(vector[1], vector[0])  # Calculate angle in radians
         angleDeg = np.degrees(angleRad)  # Convert to degrees
         return angleDeg
-
-    # def detectMarkers(self):
-    #     """
-    #     Get the position from the markers using image from cam.
-    #     :return: returns markerInfo
-    #     """
-    #     markers = {}
-    #     input1 = self.cam1.getImage()
-    #     if self.enableCam2:
-    #         input2 = self.cam2.getImage()
-    #     '''
-    #     between this and the next comment is borked
-    #     '''
-    #     markersCorners, markersId, rejectedcandidates = self.detector.detectMarkers(input1)
-
-    #     if self.enableCam2:
-    #         markersCorners2, markersId2, rejectedcandidates2 = self.detector.detectMarkers(input2)
-    #         if markersId2 is not None and markersCorners2 is not None:
-    #             for corners, id in zip(markersCorners2, markersId2):
-    #                 if id not in markerId:
-    #                     markerId + id
-    #                     markersCorners + corners
-    #     '''
-    #     next comment
-    #     '''
-    #     if markersId is not None:
-    #         #print("======================")
-    #         markers = sorted(zip(markersId, markersCorners), key=lambda x: x[0])
-    #         for markerId, corners in markers:
-    #             # Calculate the center of the marker
-    #             corners = corners.reshape((4, 2))
-    #             centerX = int(corners[:, 0].mean())
-    #             centerY = int(corners[:, 1].mean())
-    #             if self.DEBUG:
-    #                 cv2.circle(input1, (centerX, centerY), 5, (0, 255, 0), -1)
-    #             # Calculate the angle of the marker
-    #             topLeft = corners[0]
-    #             topRight = corners[1]
-    #             angle = self.calculateAngle(topLeft, topRight)
-    #             # Check if the marker ID is already in the list
-    #             markerFound = False
-    #             for markerInfo in self.markerInfoList:
-    #                 if markerInfo['id'] == markerId:
-    #                     # Update the position and angle
-    #                     markerInfo['position'] = (centerX, centerY)
-    #                     markerInfo['angle'] = angle
-    #                     markerFound = True
-    #                     break
-    #             if not markerFound:
-    #                 # Add new marker information to the list
-    #                 self.markerInfoList.append({
-    #                     'id': markerId,
-    #                     'position': (centerX, centerY),
-    #                     'angle': angle
-    #                 })
-
-    #         if self.DEBUG:
-    #             # Draw an arrow indicating the orientation of the marker
-    #             arrow_length = 50  # Length of the arrow
-    #             endX = int(centerX + arrow_length * np.cos(np.radians(angle-90)))
-    #             endY = int(centerY + arrow_length * np.sin(np.radians(angle-90)))
-    #             cv2.arrowedLine(input1, (centerX, centerY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
-    #             aruco.drawDetectedMarkers(input1, markersCorners, markersId)
-    #             cv2.imshow("Output", input1)
-    #             if self.enableCam2:
-    #                 rejected2 = input2.copy()
-    #                 aruco.drawDetectedMarkers(input2, markersCorners2, markersId2)
-    #                 cv2.imshow("Output2", input2)
-        
-    #     if self.DEBUG:
-    #         rejected = input1.copy()
-    #         aruco.drawDetectedMarkers(rejected, rejectedcandidates, borderColor=(100, 0, 255))
-    #         cv2.imshow("Rejected", rejected)
-    #         if self.enableCam2:
-    #                 rejected2 = input2.copy()
-    #                 aruco.drawDetectedMarkers(rejected2, rejectedcandidates, borderColor=(100, 0, 255))
-    #                 cv2.imshow("Rejected2", rejected2)
-    #         cv2.waitKey(1)  # Ensure the images are updated
-
-
-
-    #     return self.markerInfoList
-
-    # def releaseResources(self):
-    #     self.cam1.release()
-    #     cv2.destroyAllWindows()
 
     def detectMarkers(self):
         """
@@ -160,6 +74,7 @@ class MarkerDetector2:
         markersCorners = np.array(markersCorners, dtype=object)
         markersId = np.array(markersId).reshape(-1, 1)
 
+        newMarkerInfoList = []
         # Process the combined markers
         if markersId is not None:
             markers = sorted(zip(markersId, markersCorners), key=lambda x: x[0])
@@ -175,26 +90,26 @@ class MarkerDetector2:
                 topRight = corners[1]
                 angle = self.calculateAngle(topLeft, topRight)
                 # Check if the marker ID is already in the list
-                markerFound = False
-                for markerInfo in self.markerInfoList:
-                    if markerInfo['id'] == markerId:
-                        # Update the position and angle
-                        markerInfo['position'] = (centerX, centerY)
-                        markerInfo['angle'] = angle
-                        markerFound = True
-                        break
-                if not markerFound:
+                #markerFound = False
+                # for markerInfo in self.markerInfoList:
+                #     if markerInfo['id'] == markerId:
+                #         # Update the position and angle
+                #         markerInfo['position'] = (centerX, centerY)
+                #         markerInfo['angle'] = angle
+                #         markerFound = True
+                #         break
+                #if not markerFound:
                     # Add new marker information to the list
-                    self.markerInfoList.append({
-                        'id': markerId,
-                        'position': (centerX, centerY),
-                        'angle': angle
-                    })
+                newMarkerInfoList.append({
+                    'id': int(markerId),
+                    'position': (centerX, centerY),
+                    'angle': float(angle)
+                })
 
             if self.DEBUG:
                 # Draw an arrow indicating the orientation of the marker
                 arrow_length = 50  # Length of the arrow
-                for marker in self.markerInfoList:
+                for marker in newMarkerInfoList:
                     centerX, centerY = marker['position']
                     angle = marker['angle']
                     endX = int(centerX + arrow_length * np.cos(np.radians(angle-90)))
@@ -218,7 +133,7 @@ class MarkerDetector2:
             #     cv2.imshow("Rejected2", rejected2)
             cv2.waitKey(1)  # Ensure the images are updated
 
-        return self.markerInfoList
+        return newMarkerInfoList
 
     def releaseResources(self):
         self.cam1.release()
@@ -228,7 +143,7 @@ class MarkerDetector2:
 
 # Example usage:
 if __name__ == "__main__":
-    detector  = MarkerDetector2(cameraSource1='http://192.168.2.8:5005/video_feed', camType1=2, enableCam2=True, cameraSource2=2, camType2=0, debug=True)
+    detector  = MarkerDetector2(cameraSource1='http://192.168.2.8:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
     #time.sleep(4)
     # Initialize variables for FPS calculation
     frame_count = 0
@@ -236,6 +151,9 @@ if __name__ == "__main__":
     while(True):
         beginTime = time.time_ns()
         markerInfoList = detector.detectMarkers()
+        for mark in markerInfoList:
+                print(f"id: {mark['id']}, pos: {mark['position']}, angle: {mark['angle']}")
+        time.sleep(2)
         endTime = (time.time_ns() -  beginTime) / 1000000
         # Increment frame count
         frame_count += 1
@@ -247,16 +165,9 @@ if __name__ == "__main__":
         if elapsed_time > 1:  # Update FPS every second
             fps = frame_count / elapsed_time
             print(f"FPS: {fps:.2f}")
-
+            
             # Reset frame count and start time for the next calculation
             frame_count = 0
             start_time = time.time()
-        #print(f"time: {endTime}")
-        
-        #time.sleep(.5)
-
-        #print(f"endtime: {endTime}")
-        #if markerInfoList is not None:
-        #    for markerInfo in markerInfoList:
-        #        print(f"Marker ID: {markerInfo['id']}, Position: {markerInfo['position']}, Angle: {markerInfo['angle']:.2f} degrees")
+ 
     detector.releaseResources()

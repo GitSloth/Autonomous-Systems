@@ -166,7 +166,7 @@ def handle_command(command):
     elif command == "BACK_LED_OFF":
         bled.set(False)
     elif command == "MOVE_FORWARD":
-        MoveForward(10.0, 1)
+        MoveForward(10.0, 2)
     elif command == "MOVE_BACK":
         MoveBack(10.0, 1)
     elif command == "SPIN_LEFT":

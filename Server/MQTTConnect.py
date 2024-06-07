@@ -1,22 +1,22 @@
 import time
 from paho.mqtt import client as mqtt_client
 
-#from ImageProcessing.marker_detection import MarkerDetector
+from ImageProcessing.marker_detection_2 import MarkerDetector2
+
+
  # This ensures Camera is imported
 # connecting to the server 
 broker = 'localhost'
 port = 1883
 client_id = 'server'
-connected_bots = []
-real_bots = []
+bots_mqtt = []
+bots_matched = {}
+bots_position = {}
 
-CAMERA_ATTACHED = False
-#if CAMERA_ATTACHED:
-#    detector  = MarkerDetector(cameraSource=0, camType=0, debug=False)
-#    print("cam")
-#WEBOTSCAM_ATTACHED = True
-#if WEBOTSCAM_ATTACHED:
-#    webots_detector = MarkerDetector(cameraSource='http://localhost:5000/video_feed', camType=2, debug=False)
+def start_camera():
+    global detector
+    detector = MarkerDetector2(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=True, cameraSource2=0, camType2=0, debug=True)
+    time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -35,54 +35,111 @@ def on_message(client, userdata, msg):
         topic_send = f"robots/{robot_id}/send"
         client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
         print(f"Assigned ID {robot_id} to new robot. Config sent.")
-        connected_bots.append(robot_id)
+        bots_mqtt.append(robot_id)
         #client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
         print(f"Created topics for robot {robot_id}: {topic_receive}, {topic_send}")
     elif msg.topic == "server/info":
         payload = msg.payload.decode()
         if payload == "start":
             print("Received 'start' message on 'server/info' topic")
-            #setup_bots(client)
+            start_camera()
+            setup_bots(client)
         else:
             print("make the convo brief")
 
+def setup_bots(client, threshold=10):
+    global bots_mqtt
+    global bots_matched
+    global detector
+    print(bots_mqtt)
+    if len(bots_mqtt) < 1:
+        print("no bots")
+        return
 
+    start_positions = detector.detectMarkers()
+    print("Initial positions detected:")
+    for marker in start_positions:
+        print(f"Marker ID: {marker['id']}, Position: {marker['position']}")
+
+    for bot in bots_mqtt:
+        client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
+        client.loop()
+        print("Command sent to bot:", bot)
+        time.sleep(3)
+        new_positions = detector.detectMarkers()
+        # print("start pos")
+        # print(start_positions)
+        # print("new pos")
+        # print(new_positions)
+
+        if not new_positions:
+            print("No markers detected after bot move.")
+            continue
+
+        for new_marker in new_positions:
+            new_x, new_y = new_marker['position']
+            for start_marker in start_positions:
+                if new_marker['id'] == start_marker['id']:  # Ensure matching marker IDs
+                    start_x, start_y = start_marker['position']
+
+                    print(f"Comparing positions for Marker ID {new_marker['id']}")
+                    print(f"New position: {new_marker['position']}")
+                    print(f"Start position: {start_marker['position']}")
+
+                    x_moved = abs(new_x - start_x)
+                    y_moved = abs(new_y - start_y)
+
+                    print(f"Movement detected - x: {x_moved}, y: {y_moved}")
+
+                    if x_moved > threshold or y_moved > threshold:
+                        print(f"Bot {bot} matched with Marker ID {new_marker['id']}")
+                        bots_matched.update({bot: new_marker['id']})
+                        start_positions = new_positions
+                        break  # Exit inner loop once a match is found
+
+    print("Bots matched:", bots_matched)
 # def setup_bots(client, threshold=10):
-#     global connected_bots
-#     global real_bots
+#     global bots_mqtt
+#     global bots_matched
 #     global detector
-#     global webots_detector
-#     all_marker_info = []
-#     print(connected_bots)
-#     if len(connected_bots) < 1:
+#     print(bots_mqtt)
+#     if len(bots_mqtt) < 1:
 #         print("no bots")
 #         return
-#     if CAMERA_ATTACHED:
-#         print("Detecting markers from the real camera...")
-#         markerInfoList = detector.detectMarkers()
-#         all_marker_info = markerInfoList
-        
-#     if WEBOTSCAM_ATTACHED:
-#         print("Detecting markers from the Webots camera...")
-#         webots_detector = MarkerDetector(cameraSource='http://localhost:5005/video_feed', camType=2, debug=True)
-#         all_marker_info.append(webots_detector.detectMarkers())
-        
-#         #all_marker_info.extend(markerInfoList)
-#     print(f"Markers: {len(all_marker_info)}")
-#     # Process combined marker info list
-#     for bot in connected_bots:
-#         new_marker_list = []
+#     start_positions = detector.detectMarkers()
+#     print("start pos before for loop")
+#     print(start_positions)
+#     for bot in bots_mqtt:
 #         client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
-#         client.loop()  # Force the network loop to process the message immediately
-#         time.sleep(5)
-#         # start_time = time.time()
-#         # while True:
-#         #     current_time = time.time()
-#         #     if current_time - start_time > 2:
-#         #         break
+#         client.loop()
+#         print("test1")
+#         time.sleep(3)
+#         print("test2")
+#         new_positions = detector.detectMarkers()
+#         print("start pos")
+#         print(start_positions)
+#         print("new pos")
+#         print(new_positions)
+#         if not new_positions:
+#             print("No markers detected after bot move.")
+#             continue
+#         for new_marker, start_marker in zip(new_positions, start_positions):
+#             new_x, new_y = new_marker['position']
+#             start_x, start_y = start_marker['position']
+#             #print(new_marker['position'])
+#             #print(start_marker['position'])
+#             x_moved = abs(new_x - start_x)
+#             y_moved = abs(new_y - start_y)
+#             print(x_moved)
+#             print(y_moved)
+#             if x_moved > threshold or y_moved > threshold:
+#                 print(f"appending {bot}, {new_marker['id']}")
+#                 bots_matched.update({bot:new_marker['id']})
+#                 start_positions = new_positions
+                
+#     print(bots_matched)
 
-        
-        
+    
 #         if CAMERA_ATTACHED:
 #             new_marker_list = detector.detectMarkers()
 
@@ -109,7 +166,7 @@ def on_message(client, userdata, msg):
     # print("Combined marker information:", real_bots)
     # if CAMERA_ATTACHED:
     #     print("Connected bots")
-    #     for bot in connected_bots:
+    #     for bot in bots_mqtt:
     #         while True:  # Continuously detect markers and move the robot
     #             markerInfoList = detector.detectMarkers()
     #             client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
