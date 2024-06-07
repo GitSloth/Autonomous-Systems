@@ -31,7 +31,7 @@ def on_connect(client, userdata, flags, rc):
         print("Failed to connect, return code", rc)
 
 def on_message(client, userdata, msg):
-    print(f"say wagwan my g")
+    print(f"printers")
     global next_robot_id
     if msg.topic == "swarm/register":
         robot_id = msg.payload.decode()

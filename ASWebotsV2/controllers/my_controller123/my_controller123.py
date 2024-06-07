@@ -2,6 +2,7 @@ import random
 import paho.mqtt.client as mqtt
 from controller import Robot
 import threading
+import json
  
 robot = Robot()
 
@@ -35,10 +36,9 @@ broker = 'localhost'
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
-topic_cheese = "server/info"
 client = None
 topics = {}
-#add speed instead of forward_velocity in implementation
+ 
 def MoveForward(speed, duration):
     motor1.setVelocity(forward_velocity)
     motor2.setVelocity(forward_velocity)
@@ -132,9 +132,14 @@ def process_range_image(image):
     print("Distance Readings:", distance_readings)
 
  
+import json
+
+robot_data = {}
+
 def on_message(client, userdata, msg):
-    print("i love cheese")
+    print("I love cheese")
     global topics
+    global robot_data
     topic = msg.topic
     message = msg.payload.decode()
     
@@ -150,9 +155,41 @@ def on_message(client, userdata, msg):
             print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
+    elif topic == "robots/positions":
+        print("Received robot positions.")
+        try:
+            data = json.loads(message)
+
+            for robot_id, robot_info in data.items():
+                position = robot_info['position']
+                angle = robot_info['angle']
+                robot_data[robot_id] = {'position': position, 'angle': angle}
+            
+            print("Updated robot data:", robot_data)
+            if client_id in robot_data:
+                current_robot = robot_data[client_id]
+                position = current_robot['position']
+                angle = current_robot['angle']
+                print(f"Current robot ({client_id}) position: {position}, angle: {angle}")
+                handle_current_robot(position, angle)
+            
+            move_to_positions(robot_data)
+        except json.JSONDecodeError:
+            print("Invalid JSON format received for robot positions.")
     else:
-        print(f"Received command: {message} " + client_id )
+        print(f"Received command: {message} " + client_id)
         handle_command(message)
+
+def move_to_positions(robot_data):
+    for robot_id, info in robot_data.items():
+        position = info['position']
+        angle = info['angle']
+
+def handle_command(message):
+    pass
+
+def handle_current_robot(position, angle):
+    print(f"Handling current robot at position {position} with angle {angle}")
 
         
 def handle_command(command):
@@ -188,6 +225,7 @@ def connect_mqtt():
         client.connect(broker, port)
         print("Robot connected to MQTT Broker!")
         client.subscribe(f"robots/{client_id}/config")
+        client.subscribe(f"robots/positions")
         print(f"Subscribed to robots/{client_id}/config")
         client.publish(topic_register, client_id)
         print(f"Registration message sent: {client_id}")
