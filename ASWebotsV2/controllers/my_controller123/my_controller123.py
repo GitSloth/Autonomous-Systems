@@ -135,7 +135,6 @@ def process_range_image(image):
 import json
 
 robot_data = {}
-
 def on_message(client, userdata, msg):
     print("I love cheese")
     global topics
@@ -161,19 +160,22 @@ def on_message(client, userdata, msg):
             data = json.loads(message)
 
             for robot_id, robot_info in data.items():
-                position = robot_info['position']
-                angle = robot_info['angle']
-                robot_data[robot_id] = {'position': position, 'angle': angle}
+                if robot_id != client_id:   
+                    if robot_id in robot_data:
+                        robot_data[robot_id]['position'] = robot_info['position']
+                        robot_data[robot_id]['angle'] = robot_info['angle']
+                    else:
+                        robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
+                    print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
+                else:
+    
+                    print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
+                    robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
             
             print("Updated robot data:", robot_data)
-            if client_id in robot_data:
-                current_robot = robot_data[client_id]
-                position = current_robot['position']
-                angle = current_robot['angle']
-                print(f"Current robot ({client_id}) position: {position}, angle: {angle}")
-                handle_current_robot(position, angle)
             
-            move_to_positions(robot_data)
+
+            
         except json.JSONDecodeError:
             print("Invalid JSON format received for robot positions.")
     else:
