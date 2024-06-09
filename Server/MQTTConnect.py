@@ -1,6 +1,7 @@
 import time
 from paho.mqtt import client as mqtt_client
 import json
+import threading
 from ImageProcessing.marker_detection_2 import MarkerDetector2
 
 
@@ -48,6 +49,7 @@ def on_message(client, userdata, msg):
             print("Received 'start' message on 'server/info' topic")
             start_camera()
             setup_bots(client)
+            threading.Thread(target=periodic_position_updates, args=(client,)).start()
         elif payload == "positions":
             get_bot_positions(client)
         else:
@@ -130,6 +132,11 @@ def get_bot_positions(client):
     client.publish("robots/positions", bots_position_json)
     client.loop()
     print("bot positions:", bots_position_json)
+
+def periodic_position_updates(client):
+    while True:
+        get_bot_positions(client)
+        time.sleep(3)
 
 
 def connect_mqtt():

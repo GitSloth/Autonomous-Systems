@@ -3,7 +3,8 @@ import paho.mqtt.client as mqtt
 from controller import Robot
 import threading
 import json
- 
+import math
+
 robot = Robot()
 
 timestep = int(robot.getBasicTimeStep())
@@ -12,7 +13,7 @@ timestep = int(robot.getBasicTimeStep())
 motor1 = robot.getDevice('motor1')
 motor2 = robot.getDevice('motor2')
 motor3 = robot.getDevice('motor3')
-range_finder = robot.getDevice('range-finder')  # Changed to range-finder
+range_finder = robot.getDevice('range-finder')
 ldr = robot.getDevice('light sensor')
 
 # Set initial motor velocities
@@ -23,36 +24,51 @@ motor3.setVelocity(0)
 # Enable sensors
 ldr.enable(timestep)
 range_finder.enable(timestep)
- 
-motor1.setPosition(float('inf'))  
+
+motor1.setPosition(float('inf'))
 motor2.setPosition(float('inf'))
 motor3.setPosition(float('inf'))
-#motor wrong side 
-forward_velocity = -1.0   
-backward_velocity = 1.0   
 
+# Motor velocities
+forward_velocity = -1.0
+backward_velocity = 1.0
 
+# MQTT settings
 broker = 'localhost'
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
 client = None
 topics = {}
+
  
-def MoveForward(speed, duration):
+epsilon = 100   
+sigma = 50   
+cutoff_distance = 5 * sigma  
+
+ 
+position = [0.0, 0.0]   
+base_speed = 0.05   
+orientation = 0.0   
+
+ 
+min_speed = 0.001
+max_speed = 0.1
+
+# Movement functions
+def MoveForward(duration):
+    print("MoveForward called with duration:", duration)
     motor1.setVelocity(forward_velocity)
     motor2.setVelocity(forward_velocity)
-
-
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
-
     motor1.setVelocity(0)
     motor2.setVelocity(0)
 
-def MoveBack(speed, duration):
+def MoveBack(duration):
+    print("MoveBack called with duration:", duration)
     motor1.setVelocity(backward_velocity)
     motor2.setVelocity(backward_velocity)
     end_time = robot.getTime() + duration
@@ -62,19 +78,19 @@ def MoveBack(speed, duration):
     motor1.setVelocity(0)
     motor2.setVelocity(0)
 
-def SpinLeft(speed, duration):
+def SpinLeft(duration):
+    print("SpinLeft called with duration:", duration)
     motor2.setVelocity(backward_velocity)
     motor1.setVelocity(forward_velocity)
-    
     end_time = robot.getTime() + duration
     while robot.getTime() < end_time:
         if robot.step(timestep) == -1:
             break
     motor1.setVelocity(0)
     motor2.setVelocity(0)
-    
 
-def SpinRight(speed, duration):
+def SpinRight(duration):
+    print("SpinRight called with duration:", duration)
     motor1.setVelocity(backward_velocity)
     motor2.setVelocity(forward_velocity)
     end_time = robot.getTime() + duration
@@ -108,7 +124,6 @@ def SpinTop(speed, duration):
     motor3.setPosition(0)
     print("LDR Readings:", ldr_readings)
     print("Distance Readings:", distance_readings)
-    #motor3.setVelocity(0)
 
 def process_range_image(image):
     if len(image) == 0:
@@ -118,110 +133,148 @@ def process_range_image(image):
         if distance < min_distance:
             min_distance = distance
     return min_distance
+    
+    
+def calculate_force(position_a, position_b):
+    """Calculate the force vector between two bots based on Lennard-Jones potential."""
+    dx = position_b[0] - position_a[0]
+    dy = position_b[1] - position_a[1]
+    r = math.sqrt(dx ** 2 + dy ** 2)
+    """No force returns after cutoff distance"""
+    if r > cutoff_distance:
+        return 0.0, 0.0
+    
+    if r != 0:
+        force_magnitude = 24 * epsilon * (2 * (sigma ** 12 / r ** 13) - (sigma ** 6 / r ** 7))
+        force_x = force_magnitude * (dx / r)
+        force_y = force_magnitude * (dy / r)
+    else:
+        force_x, force_y = 0, 0
+    
+    print(f"Force from ({position_a}) to ({position_b}) -> Force: ({force_x}, {force_y})")  # Debugging force values
+    return force_x, force_y
+    
 
+def update_position_and_orientation(position, orientation, forces):
+    total_force_x, total_force_y = 0, 0
+    for fx, fy in forces:
+        total_force_x += fx
+        total_force_y += fy
+    
+    resultant_angle = math.atan2(total_force_y, total_force_x) * 180 / math.pi
+    resultant_magnitude = math.sqrt(total_force_x ** 2 + total_force_y ** 2)
+    
  
-    motor3.setPosition(0)
-    end_time = robot.getTime() + duration 
-    while robot.getTime() < end_time:
-        if robot.step(timestep) == -1:
-            break
+    if resultant_angle > 180:
+        resultant_angle -= 360
+    elif resultant_angle < -180:
+        resultant_angle += 360
+    
  
-        
-        motor3.setVelocity(speed)
-    print("LDR Readings:", ldr_readings)
-    print("Distance Readings:", distance_readings)
+    orientation_difference = resultant_angle - orientation
+    if orientation_difference > 180:
+        orientation_difference -= 360
+    elif orientation_difference < -180:
+        orientation_difference += 360
+    orientation += orientation_difference * 0.1   
+    
+    speed = min(max_speed, max(min_speed, base_speed * resultant_magnitude))
+    
+ 
+    if position[0] < 0 or position[0] > 1000 or position[1] < 0 or position[1] > 500:
+ 
+        SpinRight(2)   
+    else:
+ 
+        MoveForward(1)  
 
- 
-import json
+    position[0] += speed * math.cos(math.radians(orientation))
+    position[1] += speed * math.sin(math.radians(orientation))
+    
+    print(f"Updated position: {position}, orientation: {orientation}, speed: {speed}")
+    return position, orientation, speed
 
-robot_data = {}
 def on_message(client, userdata, msg):
-    print("I love cheese")
-    global topics
-    global robot_data
+    global topics, position, orientation
     topic = msg.topic
     message = msg.payload.decode()
     
     if topic == f"robots/{client_id}/config":
-        print("Received configuration response.")
         config = message.split(',')
         if len(config) == 2:
             topics['receive'] = config[0]
             topics['send'] = config[1]
             client.subscribe(topics['receive'])
-            print(f"Subscribed to {topics['receive']}")
             client.publish(topics['send'], f"{client_id} connected successfully")
-            print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
     elif topic == "robots/positions":
-        print("Received robot positions.")
         try:
             data = json.loads(message)
-
+            forces = []
             for robot_id, robot_info in data.items():
-                if robot_id != client_id:   
-                    if robot_id in robot_data:
-                        robot_data[robot_id]['position'] = robot_info['position']
-                        robot_data[robot_id]['angle'] = robot_info['angle']
-                    else:
-                        robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
-                    print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
+                if robot_id == client_id:
+                    position = robot_info['position']
+                    orientation = robot_info['angle']
                 else:
-    
-                    print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
-                    robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
+                    x, y = robot_info['position']
+                    other_position = (x, y)
+                    fx, fy = calculate_force(position, other_position)
+                    forces.append((fx, fy))
+                    
+            position, orientation, speed = update_position_and_orientation(position, orientation, forces)
             
-            print("Updated robot data:", robot_data)
-            
-
+            perform_movement_based_on_orientation(orientation, speed)
             
         except json.JSONDecodeError:
             print("Invalid JSON format received for robot positions.")
     else:
-        print(f"Received command: {message} " + client_id)
         handle_command(message)
 
-def move_to_positions(robot_data):
-    for robot_id, info in robot_data.items():
-        position = info['position']
-        angle = info['angle']
-
-def handle_command(message):
-    pass
-
-def handle_current_robot(position, angle):
-    print(f"Handling current robot at position {position} with angle {angle}")
-
-        
 def handle_command(command):
+    print("Received command:", command)
     command = command.strip().upper()
-    print(command)
-    if command == "FRONT_LED_ON":
-        fled.set(True)
-    elif command == "FRONT_LED_OFF":
-        fled.set(False)
-    elif command == "BACK_LED_ON":
-        bled.set(True)
-    elif command == "BACK_LED_OFF":
-        bled.set(False)
-    elif command == "MOVE_FORWARD":
-        MoveForward(10.0, 2)
+    if command == "MOVE_FORWARD":
+        MoveForward(2)
     elif command == "MOVE_BACK":
-        MoveBack(10.0, 1)
+        MoveBack(1)
     elif command == "SPIN_LEFT":
-        SpinLeft(10.0, 1)
+        SpinLeft(1)
     elif command == "SPIN_RIGHT":
-        SpinRight(10.0, 1)
+        SpinRight(1)
     elif command == "SPIN_TOP":
         SpinTop(10.0, 1)
     else:
         print("Invalid command.")
 
- 
+def perform_movement_based_on_orientation(orientation, speed):
+    print(f"Performing movement based on orientation: {orientation}, speed: {speed}")
+    if -45 <= orientation <= 45:
+        MoveForward(1)
+    elif 135 <= orientation <= 225:
+        MoveBack(1)
+    elif 45 < orientation < 135:
+        SpinLeft(1)
+    elif 225 < orientation < 315:
+        SpinRight(1)
+    else:
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        random_move()
+
+def random_move():
+    move_type = random.choice(['MOVE_FORWARD', 'MOVE_BACK', 'SPIN_LEFT', 'SPIN_RIGHT'])
+    print(f"Random move chosen:")
+    #if move_type == 'MOVE_BACK':
+         #MoveForward(1)
+    if move_type == 'MOVE_FORWARD':
+        MoveBack(1)
+    elif move_type == 'SPIN_RIGHT':
+        SpinLeft(1)
+    elif move_type == 'SPIN_LEFT':
+        SpinRight(1)
+
 client = mqtt.Client(client_id)
 client.on_message = on_message
- 
 def connect_mqtt():
     try:
         client.connect(broker, port)
@@ -233,12 +286,6 @@ def connect_mqtt():
         print(f"Registration message sent: {client_id}")
     except Exception as e:
         print(f"Failed to connect to MQTT Broker: {e}")
-        for _ in range(3):
-            fled.set(True)
-            robot.step(timestep)
-            fled.set(False)
-            robot.step(timestep)
- 
 
 def run_mqtt():
     print("Starting")
@@ -246,6 +293,6 @@ def run_mqtt():
     message_thread = threading.Thread(target=lambda: client.loop_forever())
     message_thread.start()
     while robot.step(timestep) != -1:
- 
         pass
+
 run_mqtt()
