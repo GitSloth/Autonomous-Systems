@@ -13,7 +13,7 @@ class MarkerDetector2:
     def __init__(self, camType1=0, cameraSource1=0, enableCam2=True, camType2=0, cameraSource2=0, debug=False):
         self.DEBUG = debug
         self.enableCam2 = enableCam2
-        self.cam1 = Camera(camType2, cameraSource2)
+        self.cam1 = Camera(camType1, cameraSource1)
         if self.enableCam2:
             self.cam2= Camera(camType2, cameraSource2)
         
