@@ -2,7 +2,7 @@ import time
 from paho.mqtt import client as mqtt_client
 import json
 import threading
-from ImageProcessing.marker_detection_2 import MarkerDetector2
+from Server.ImageProcessing.marker_detection import MarkerDetector
 
 
  # This ensures Camera is imported
@@ -20,7 +20,7 @@ def start_camera():
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector = MarkerDetector2(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=2, debug=False)
+    detector = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=2, debug=False)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
