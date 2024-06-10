@@ -2,7 +2,7 @@ import time
 from paho.mqtt import client as mqtt_client
 import json
 import threading
-from Server.ImageProcessing.marker_detection import MarkerDetector
+from ImageProcessing.marker_detection import MarkerDetector
 
 
  # This ensures Camera is imported

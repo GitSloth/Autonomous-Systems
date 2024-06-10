@@ -5,6 +5,7 @@ import threading
 import json
 import math
 
+
 robot = Robot()
 
 timestep = int(robot.getBasicTimeStep())
@@ -15,6 +16,12 @@ motor2 = robot.getDevice('motor2')
 motor3 = robot.getDevice('motor3')
 range_finder = robot.getDevice('range-finder')
 ldr = robot.getDevice('light sensor')
+
+# sensor readings
+ldr_readings = []
+distance_readings = []
+radius = 50
+robot_data = {}
 
 # Set initial motor velocities
 motor1.setVelocity(0)
@@ -101,8 +108,8 @@ def SpinRight(duration):
     motor2.setVelocity(0)
 
 def SpinTop(speed, duration):
-    ldr_readings = []
-    distance_readings = []
+    global ldr_readings
+    global distance_readings
     step_count = 10
     angle_step = 180 / (step_count - 1)
     initial_position = -90
@@ -194,42 +201,170 @@ def update_position_and_orientation(position, orientation, forces):
     print(f"Updated position: {position}, orientation: {orientation}, speed: {speed}")
     return position, orientation, speed
 
+def calculate_distance(coord1, coord2):
+    """Calculate the Euclidean distance between two points."""
+    return math.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
+
+def calculate_intersection_points(coord1, coord2, radius):
+    """Calculate the intersection points of two circles."""
+    d = calculate_distance(coord1, coord2)
+    
+    # No intersection if distance is greater than 2 times the radius or zero
+    if d > 2 * radius or d == 0:
+        return None
+    
+    a = (radius**2 - radius**2 + d**2) / (2 * d)
+    h = math.sqrt(radius**2 - a**2)
+    
+    x2 = coord1[0] + a * (coord2[0] - coord1[0]) / d
+    y2 = coord1[1] + a * (coord2[1] - coord1[1]) / d
+    
+    x3 = x2 + h * (coord2[1] - coord1[1]) / d
+    y3 = y2 - h * (coord2[0] - coord1[0]) / d
+    
+    x4 = x2 - h * (coord2[1] - coord1[1]) / d
+    y4 = y2 + h * (coord2[0] - coord1[0]) / d
+    
+    return (x3, y3), (x4, y4)
+
+
+def check_intersections(target_robot_id, radius):
+    global robot_data
+    intersections = []
+    target_position = robot_data[target_robot_id]['position']
+    for robot_id, info in robot_data.items():
+        if robot_id == target_robot_id:
+            continue
+        other_position = info['position']
+        points = calculate_intersection_points(target_position, other_position, radius)
+        if points:
+            intersections.append((robot_id, points))
+    return intersections
+
+def check_border_intersection(position, radius, width, height):
+    """Check if a circle intersects with the borders of the image."""
+    x, y = position
+    intersects = []
+    
+    if x - radius < 0:
+        intersects.append('left')
+    if x + radius > width:
+        intersects.append('right')
+    if y - radius < 0:
+        intersects.append('top')
+    if y + radius > height:
+        intersects.append('bottom')
+    
+    return intersects
+
+def pathing_light():
+    # radius for colission
+    # visual wall for colision
+    # check colision
+    # if collission move away
+    # scan ldr&distance
+    # if not high enough, random while avoiding collision
+    # if high enough: highest value
+    # ga naar highest value
+    # value ldr hoog genoeg, distance laag genoeg: trigger iets
+
+    global robot_data
+    intersections = check_intersections(client_id, radius)
+    border_intersections = check_border_intersection(robot_data[client_id]['position'], radius, 1280, 720)
+    # check available directions and steer in one of them 
+
+    
+            
+            
+         
+
+    pass
+
+
+
 def on_message(client, userdata, msg):
-    global topics, position, orientation
+    print("I love cheese")
+    global topics
+    global robot_data
     topic = msg.topic
     message = msg.payload.decode()
     
     if topic == f"robots/{client_id}/config":
+        print("Received configuration response.")
         config = message.split(',')
         if len(config) == 2:
             topics['receive'] = config[0]
             topics['send'] = config[1]
             client.subscribe(topics['receive'])
+            print(f"Subscribed to {topics['receive']}")
             client.publish(topics['send'], f"{client_id} connected successfully")
+            print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
     elif topic == "robots/positions":
+        print("Received robot positions.")
         try:
             data = json.loads(message)
-            forces = []
+
             for robot_id, robot_info in data.items():
-                if robot_id == client_id:
-                    position = robot_info['position']
-                    orientation = robot_info['angle']
+                if robot_id != client_id:   
+                    if robot_id in robot_data:
+                        robot_data[robot_id]['position'] = robot_info['position']
+                        robot_data[robot_id]['angle'] = robot_info['angle']
+                    else:
+                        robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
+                    print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
                 else:
-                    x, y = robot_info['position']
-                    other_position = (x, y)
-                    fx, fy = calculate_force(position, other_position)
-                    forces.append((fx, fy))
-                    
-            position, orientation, speed = update_position_and_orientation(position, orientation, forces)
+    
+                    print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
+                    robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
             
-            perform_movement_based_on_orientation(orientation, speed)
+            print("Updated robot data:", robot_data)
+            
+
             
         except json.JSONDecodeError:
             print("Invalid JSON format received for robot positions.")
     else:
+        print(f"Received command: {message} " + client_id)
         handle_command(message)
+
+# def on_message(client, userdata, msg):
+#     global topics, position, orientation
+#     topic = msg.topic
+#     message = msg.payload.decode()
+    
+#     if topic == f"robots/{client_id}/config":
+#         config = message.split(',')
+#         if len(config) == 2:
+#             topics['receive'] = config[0]
+#             topics['send'] = config[1]
+#             client.subscribe(topics['receive'])
+#             client.publish(topics['send'], f"{client_id} connected successfully")
+#         else:
+#             print("Invalid configuration format received.")
+#     elif topic == "robots/positions":
+#         try:
+#             data = json.loads(message)
+#             forces = []
+#             for robot_id, robot_info in data.items():
+#                 if robot_id == client_id:
+#                     position = robot_info['position']
+#                     orientation = robot_info['angle']
+#                 else:
+#                     x, y = robot_info['position']
+#                     other_position = (x, y)
+#                     fx, fy = calculate_force(position, other_position)
+#                     forces.append((fx, fy))
+                    
+#             position, orientation, speed = update_position_and_orientation(position, orientation, forces)
+            
+#             perform_movement_based_on_orientation(orientation, speed)
+            
+#         except json.JSONDecodeError:
+#             print("Invalid JSON format received for robot positions.")
+#     else:
+#         handle_command(message)
 
 def handle_command(command):
     print("Received command:", command)
