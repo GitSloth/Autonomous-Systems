@@ -262,20 +262,20 @@ def check_border_intersection(current_position, radius, width, height):
     return intersects
 
 def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
-    global robot_data  # If you're using robot_data elsewhere in the function
+    global robot_data  
     
     print("Avoiding")
     
-    # Handle borders
+
     for border in border_intersections:
         print(border)
         if border == 'left' and (-180 <= current_angle <= 0):
             print("Avoid border left by turning right")
             SpinRight(0.3)
             return
-        elif border == 'right' and (90 <= current_angle or current_angle <= -90):
+        elif border == 'right' and (-90 <= current_angle <= 90):
             print("Avoid border right by turning left")
-            SpinLeft(0.3)
+            SpinRight(0.3)
             return
         elif border == 'top' and (-180 <= current_angle <= 0):
             print("Avoid border top by turning right")
@@ -283,10 +283,9 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
             return
         elif border == 'bottom' and (0 <= current_angle <= 180):
             print("Avoid border bottom by moving forward")
-            SpinLeft(0.3)
+            SpinRight(0.3)
             return
     
-    # Default action when no matching border is found
     print("No matching border, moving forward")
     MoveForward(1)
     

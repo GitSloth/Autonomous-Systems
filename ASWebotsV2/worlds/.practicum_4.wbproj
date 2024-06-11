@@ -11,5 +11,11 @@ textFiles: 1 "controllers/Central_server_py/Central_server_py.py" "controllers/m
 globalOptionalRendering: CameraFrustums::LightSensorRays::DistanceSensorRays::RangeFinderFrustums
 consoles: Console:All:All
 renderingDevicePerspectives: Charriot(1):range-finder;1;0.5;0;0
-renderingDevicePerspectives: Charriot(5):range-finder;1;1.89063;0;0
+renderingDevicePerspectives: Charriot(2):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(3):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(4):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(5):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(6):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(7):range-finder;1;1;0;0
+renderingDevicePerspectives: Charriot(8):range-finder;1;1;0;0
 renderingDevicePerspectives: centrale_server:camera;1;0.259375;0;0
