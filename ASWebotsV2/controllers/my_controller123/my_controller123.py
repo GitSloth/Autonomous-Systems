@@ -20,7 +20,7 @@ ldr = robot.getDevice('light sensor')
 # sensor readings
 ldr_readings = []
 distance_readings = []
-radius = 50
+radius = 80
 robot_data = {}
 
 # Set initial motor velocities
@@ -201,13 +201,10 @@ def update_position_and_orientation(position, orientation, forces):
     print(f"Updated position: {position}, orientation: {orientation}, speed: {speed}")
     return position, orientation, speed
 
-def calculate_distance(coord1, coord2):
-    """Calculate the Euclidean distance between two points."""
-    return math.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
 
 def calculate_intersection_points(coord1, coord2, radius):
     """Calculate the intersection points of two circles."""
-    d = calculate_distance(coord1, coord2)
+    d = math.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
     
     # No intersection if distance is greater than 2 times the radius or zero
     if d > 2 * radius or d == 0:
@@ -225,25 +222,30 @@ def calculate_intersection_points(coord1, coord2, radius):
     x4 = x2 - h * (coord2[1] - coord1[1]) / d
     y4 = y2 + h * (coord2[0] - coord1[0]) / d
     
-    return (x3, y3), (x4, y4)
+    midpoint_x = (x3 + x4) / 2
+    midpoint_y = (y3 + y4) / 2
+    return (midpoint_x, midpoint_y)
 
 
-def check_intersections(target_robot_id, radius):
+def check_intersections(current_position, radius):
+    '''
+    get the points of intersection of the radius 
+    '''
     global robot_data
+    global client_id
     intersections = []
-    target_position = robot_data[target_robot_id]['position']
     for robot_id, info in robot_data.items():
-        if robot_id == target_robot_id:
+        if robot_id == client_id:
             continue
         other_position = info['position']
-        points = calculate_intersection_points(target_position, other_position, radius)
+        points = calculate_intersection_points(current_position, other_position, radius)
         if points:
-            intersections.append((robot_id, points))
+            intersections.append(points)
     return intersections
 
-def check_border_intersection(position, radius, width, height):
+def check_border_intersection(current_position, radius, width, height):
     """Check if a circle intersects with the borders of the image."""
-    x, y = position
+    x, y = current_position
     intersects = []
     
     if x - radius < 0:
@@ -257,6 +259,60 @@ def check_border_intersection(position, radius, width, height):
     
     return intersects
 
+def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
+    global robot_data
+    print("Avoiding")
+    # handle borders
+    for border in border_intersections:
+        if border == 'left':
+            #rechts sturen
+            print("avoid border left to the right")
+            SpinRight(1)
+            return
+        elif border == 'right':
+            # links sturen
+            print("avoid border right to the left")
+            SpinLeft(1)
+            return
+        elif border == 'top':
+            # random links/rechts
+            print("avoid border top to the right")
+            SpinRight(1)
+            return
+        elif border == 'bottom':
+            # vooruit
+            print("avoid border back by forward")
+            MoveForward(1)
+            return
+    
+    # handle robot intersections
+    for point in intersections:
+        angle = calculate_relative_angle(current_position, current_angle, point)
+        print(angle)
+        if angle > 0 and angle <= 90:
+            print("avoid to the left")
+            SpinLeft(1)
+            return
+        elif angle > 90 and angle <= 270:
+            #vooruit
+            print("avoid forward")
+            MoveForward(1)
+            return
+        elif angle > 270 and angle <= 360:
+            print("avoid to the the right")
+            SpinRight(1)
+            return
+
+def calculate_relative_angle(current_position, current_angle, point):
+    """Calculate the relative angle from the robot's perspective to a point."""
+    dx = point[0] - current_position[0]
+    dy = point[1] - current_position[1]
+    angle_to_point = math.atan2(dy, dx) * 180 / math.pi  # Convert radians to degrees
+    
+    # Normalize the angle to the range [0, 360]
+    relative_angle = (angle_to_point - current_angle) % 360
+    return relative_angle
+
 def pathing_light():
     # radius for colission
     # visual wall for colision
@@ -269,17 +325,23 @@ def pathing_light():
     # value ldr hoog genoeg, distance laag genoeg: trigger iets
 
     global robot_data
-    intersections = check_intersections(client_id, radius)
-    border_intersections = check_border_intersection(robot_data[client_id]['position'], radius, 1280, 720)
-    # check available directions and steer in one of them 
-
+    global client_id
     
-            
-            
-         
-
-    pass
-
+    try:
+        current_position = robot_data[client_id]['position']
+        current_angle = robot_data[client_id]['angle']
+    except KeyError:
+        print(F"No key with that name: {client_id}")
+        return
+    intersections = check_intersections(current_position, radius)
+    border_intersections = check_border_intersection(current_position, radius, 1280, 720)
+    # check available directions and steer in one of them 
+    if intersections or border_intersections:
+        avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)
+    else:
+        MoveForward(1)
+        #SpinTop()
+        #highest_light_index = ldr_readings.index(max(ldr_readings))
 
 
 def on_message(client, userdata, msg):
@@ -321,6 +383,7 @@ def on_message(client, userdata, msg):
             
             print("Updated robot data:", robot_data)
             
+            pathing_light()
 
             
         except json.JSONDecodeError:
