@@ -37,8 +37,8 @@ motor2.setPosition(float('inf'))
 motor3.setPosition(float('inf'))
 
 # Motor velocities
-forward_velocity = -1.0
-backward_velocity = 1.0
+forward_velocity = -3.0
+backward_velocity = 3.0
 
 # MQTT settings
 broker = 'localhost'
@@ -248,44 +248,49 @@ def check_border_intersection(current_position, radius, width, height):
     x, y = current_position
     intersects = []
     
-    if x - radius < 0:
+    if x - radius < 100:
         intersects.append('left')
-    if x + radius > width:
+    if x + radius > 1100:
         intersects.append('right')
-    if y - radius < 0:
+    if y - radius < 100:
         intersects.append('top')
-    if y + radius > height:
+    if y + radius > 600:
         intersects.append('bottom')
     
     return intersects
 
+    return intersects
+
 def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
-    global robot_data
+    global robot_data  # If you're using robot_data elsewhere in the function
+    
     print("Avoiding")
-    # handle borders
+    
+    # Handle borders
     for border in border_intersections:
-        if border == 'left':
-            #rechts sturen
-            print("avoid border left to the right")
-            SpinRight(1)
+        print(border)
+        if border == 'left' and (-180 <= current_angle <= 0):
+            print("Avoid border left by turning right")
+            SpinRight(0.3)
             return
-        elif border == 'right':
-            # links sturen
-            print("avoid border right to the left")
-            SpinLeft(1)
+        elif border == 'right' and (90 <= current_angle or current_angle <= -90):
+            print("Avoid border right by turning left")
+            SpinLeft(0.3)
             return
-        elif border == 'top':
-            # random links/rechts
-            print("avoid border top to the right")
-            SpinRight(1)
+        elif border == 'top' and (-180 <= current_angle <= 0):
+            print("Avoid border top by turning right")
+            SpinRight(0.3)
             return
-        elif border == 'bottom':
-            # vooruit
-            print("avoid border back by forward")
-            MoveForward(1)
+        elif border == 'bottom' and (0 <= current_angle <= 180):
+            print("Avoid border bottom by moving forward")
+            SpinLeft(0.3)
             return
     
-    # handle robot intersections
+    # Default action when no matching border is found
+    print("No matching border, moving forward")
+    MoveForward(1)
+    
+    # Handle intersections
     for point in intersections:
         angle = calculate_relative_angle(current_position, current_angle, point)
         print(angle)
@@ -299,7 +304,7 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
             MoveForward(1)
             return
         elif angle > 270 and angle <= 360:
-            print("avoid to the the right")
+            print("avoid to the right")
             SpinRight(1)
             return
 
@@ -334,7 +339,7 @@ def pathing_light():
         print(F"No key with that name: {client_id}")
         return
     intersections = check_intersections(current_position, radius)
-    border_intersections = check_border_intersection(current_position, radius, 1280, 720)
+    border_intersections = check_border_intersection(current_position, radius, 1100, 600)
     # check available directions and steer in one of them 
     if intersections or border_intersections:
         avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)

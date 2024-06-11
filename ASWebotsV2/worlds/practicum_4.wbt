@@ -10,8 +10,9 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.5484224989751014 0.3362531066461512 0.765615184599102 2.2638212252976833
-  position 7.849577881550433 -5.064535747329205 16.073053591640505
+  orientation -0.4513842049772022 -0.508016478774346 0.7336017698934576 4.521956583372209
+  position 3.4774223332284837 21.441090485673858 46.439059037996394
+  follow "Charriot(1)"
 }
 TexturedBackground {
   texture "dusk"
@@ -67,8 +68,8 @@ DEF Centrale_server Robot {
   supervisor TRUE
 }
 DEF Charriot Robot {
-  translation 5.98027 1.1301 -0.0527014
-  rotation 0.0017990960244537993 0.001314567676121485 0.9999975175795787 1.5664473588239554
+  translation 5.8732 -2.8495 -0.0543204
+  rotation -0.0017990991320616294 -0.0013145693658130487 -0.9999975175717666 -1.5664453071795865
   children [
     DEF qr-code Pose {
       children [
@@ -236,8 +237,8 @@ DEF Charriot Robot {
         }
       ]
       endPoint Solid {
-        translation 0.40998574933038956 0.33983757795254155 0.28974487285981093
-        rotation -0.6498986700459652 -0.3937152094934162 -0.65009234150699 3.8912093120917626
+        translation 0.40998574933038956 0.3398375779525417 0.28974487285981093
+        rotation -0.6498986700459698 -0.3937152094934149 -0.6500923415069864 3.891209312091766
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -268,8 +269,8 @@ DEF Charriot Robot {
         }
       ]
       endPoint Solid {
-        translation -0.4700171891213426 0.3398606135436423 0.2897353836024976
-        rotation -0.6499334371874845 -0.39354427762648503 -0.650161079097411 3.8909595844464633
+        translation -0.4700171891213426 0.33986061354364205 0.2897353836024974
+        rotation -0.6499334371874876 -0.3935442776264852 -0.650161079097408 3.890959584446471
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -298,8 +299,8 @@ DEF Charriot Robot {
   controller "my_controller123"
 }
 DEF Charriot Robot {
-  translation 1.2850699998098385 1.22887998677727 -0.05626212616748873
-  rotation 0.39781819280375474 -0.00024531891153390257 -0.917464236519869 0.008282460519837784
+  translation -2.77451 -1.33038 -0.0647535
+  rotation -0.0016422405031414607 -0.001640210502519519 0.9999973063741908 -1.5783953071795862
   children [
     DEF qr-code Pose {
       children [
@@ -467,8 +468,8 @@ DEF Charriot Robot {
         }
       ]
       endPoint Solid {
-        translation 0.40998574933038956 0.33983758893630994 0.28974486586752685
-        rotation -0.649903561507121 -0.39369904894180696 -0.6500972385748738 3.891181332843708
+        translation 0.40998574933038956 0.3398375889363101 0.2897448658675269
+        rotation -0.649903561507127 -0.3936990489418047 -0.6500972385748693 3.8911813328437113
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -485,8 +486,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 6.20599476468279e-09 8.299396049127938e-07 -4.9244350671342216e-05
-        angularVelocity -3.331798641655291e-06 2.5811538899991457e-08 1.506147617038693e-10
       }
     }
     DEF wheel2 HingeJoint {
@@ -501,8 +500,8 @@ DEF Charriot Robot {
         }
       ]
       endPoint Solid {
-        translation -0.4700171891213426 0.33986057785862106 0.2897354024026255
-        rotation -0.6499181196820063 -0.3935949010418006 -0.6501457464160635 3.891047233735279
+        translation -0.4700171891213426 0.33986057785862134 0.2897354024026255
+        rotation -0.6499181196820126 -0.39359490104179795 -0.650145746416059 3.8910472337352813
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -520,8 +519,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 6.099621396586009e-09 8.298052844889376e-07 -4.923896037754089e-05
-        angularVelocity -3.331756843467184e-06 2.3334013416079825e-08 1.5029584524950584e-10
       }
     }
   ]
@@ -531,8 +528,6 @@ DEF Charriot Robot {
     mass 5
   }
   controller "my_controller123"
-  linearVelocity 2.57584722977557e-09 3.5090522247093056e-07 -4.649925234839427e-05
-  angularVelocity -3.3329997434829643e-06 2.573917256548814e-08 1.500207043421335e-10
 }
 FloorLight {
   translation 0.31 7.51 0
