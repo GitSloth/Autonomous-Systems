@@ -74,6 +74,16 @@ def MoveForward(duration):
     motor1.setVelocity(0)
     motor2.setVelocity(0)
 
+def MoveForwardCont():
+    print("MoveForwardCont called")
+    motor1.setVelocity(forward_velocity)
+    motor2.setVelocity(forward_velocity)
+# Movement functions
+def Stop():
+    print("Stop")
+    motor1.setVelocity(0)
+    motor2.setVelocity(0)
+
 def MoveBack(duration):
     print("MoveBack called with duration:", duration)
     motor1.setVelocity(backward_velocity)
@@ -246,66 +256,65 @@ def check_intersections(current_position, radius):
 def check_border_intersection(current_position, radius, width, height):
     """Check if a circle intersects with the borders of the image."""
     x, y = current_position
-    intersects = []
+    radius = radius
+    intersections = []
     
-    if x - radius < 100:
-        intersects.append('left')
-    if x + radius > 1100:
-        intersects.append('right')
-    if y - radius < 100:
-        intersects.append('top')
-    if y + radius > 600:
-        intersects.append('bottom')
+    # Check intersection with the left border (x = 0)
+    if x - radius < 20:
+        intersections.append((0, y))
     
-    return intersects
+    # Check intersection with the right border (x = width)
+    if x + radius > width - 20:
+        intersections.append((width, y))
+    
+    # Check intersection with the top border (y = 0)
+    if y - radius < 20:
+        intersections.append((x, 0))
+    
+    # Check intersection with the bottom border (y = height)
+    if y + radius > height - 20:
+        intersections.append((x, height))
+    
+    return intersections
 
-    return intersects
 
 def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
     global robot_data  
     
     print("Avoiding")
     
-
-    for border in border_intersections:
-        print(border)
-        if border == 'left' and (-180 <= current_angle <= 0):
-            print("Avoid border left by turning right")
-            SpinRight(0.3)
-            return
-        elif border == 'right' and (-90 <= current_angle <= 90):
-            print("Avoid border right by turning left")
-            SpinRight(0.3)
-            return
-        elif border == 'top' and (-180 <= current_angle <= 0):
-            print("Avoid border top by turning right")
-            SpinRight(0.3)
-            return
-        elif border == 'bottom' and (0 <= current_angle <= 180):
-            print("Avoid border bottom by moving forward")
-            SpinRight(0.3)
-            return
-    
-    print("No matching border, moving forward")
-    MoveForward(1)
+    if border_intersections:
+        for border in border_intersections:
+            border_angle = calculate_relative_angle(current_position, current_angle, border)
+            if 0 <= border_angle <= 90:
+                SpinLeft(0.3)
+                return
+            elif 90 < border_angle < 270: 
+                MoveForward(0.3)
+                return
+            elif 270 <= border_angle <= 360:
+                SpinRight(0.3) 
+                return
     
     # Handle intersections
     for point in intersections:
         angle = calculate_relative_angle(current_position, current_angle, point)
         print(angle)
-        if angle > 0 and angle <= 90:
+        if 0 < angle <= 90:
             print("avoid to the left")
-            SpinLeft(1)
+            SpinLeft(0.3)
             return
-        elif angle > 90 and angle <= 270:
+        elif 90 < angle <= 270:
             #vooruit
             print("avoid forward")
-            MoveForward(1)
+            MoveForward(0.3)
             return
-        elif angle > 270 and angle <= 360:
+        elif 270 < angle <= 360:
             print("avoid to the right")
-            SpinRight(1)
+            SpinRight(0.3)
             return
+    
+    print("No collisions found?")
 
 def calculate_relative_angle(current_position, current_angle, point):
     """Calculate the relative angle from the robot's perspective to a point."""
@@ -343,7 +352,7 @@ def pathing_light():
     if intersections or border_intersections:
         avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)
     else:
-        MoveForward(1)
+        MoveForwardCont()
         #SpinTop()
         #highest_light_index = ldr_readings.index(max(ldr_readings))
 
@@ -396,48 +405,13 @@ def on_message(client, userdata, msg):
         print(f"Received command: {message} " + client_id)
         handle_command(message)
 
-# def on_message(client, userdata, msg):
-#     global topics, position, orientation
-#     topic = msg.topic
-#     message = msg.payload.decode()
-    
-#     if topic == f"robots/{client_id}/config":
-#         config = message.split(',')
-#         if len(config) == 2:
-#             topics['receive'] = config[0]
-#             topics['send'] = config[1]
-#             client.subscribe(topics['receive'])
-#             client.publish(topics['send'], f"{client_id} connected successfully")
-#         else:
-#             print("Invalid configuration format received.")
-#     elif topic == "robots/positions":
-#         try:
-#             data = json.loads(message)
-#             forces = []
-#             for robot_id, robot_info in data.items():
-#                 if robot_id == client_id:
-#                     position = robot_info['position']
-#                     orientation = robot_info['angle']
-#                 else:
-#                     x, y = robot_info['position']
-#                     other_position = (x, y)
-#                     fx, fy = calculate_force(position, other_position)
-#                     forces.append((fx, fy))
-                    
-#             position, orientation, speed = update_position_and_orientation(position, orientation, forces)
-            
-#             perform_movement_based_on_orientation(orientation, speed)
-            
-#         except json.JSONDecodeError:
-#             print("Invalid JSON format received for robot positions.")
-#     else:
-#         handle_command(message)
-
 def handle_command(command):
     print("Received command:", command)
     command = command.strip().upper()
     if command == "MOVE_FORWARD":
-        MoveForward(2)
+        MoveForward(1)
+    elif command == "MOVE_FORWARD_CONT":
+        MoveForwardCont()
     elif command == "MOVE_BACK":
         MoveBack(1)
     elif command == "SPIN_LEFT":
@@ -446,6 +420,8 @@ def handle_command(command):
         SpinRight(1)
     elif command == "SPIN_TOP":
         SpinTop(10.0, 1)
+    elif command == "stop":
+        Stop()
     else:
         print("Invalid command.")
 

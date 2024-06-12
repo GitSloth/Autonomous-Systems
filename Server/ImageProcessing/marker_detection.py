@@ -1,8 +1,14 @@
 import cv2
 from cv2 import aruco
-from .camera import Camera
 import numpy as np
 import time
+
+try:
+    # Try relative import if running as part of the package
+    from .camera import Camera
+except ImportError:
+    # Fall back to direct import if running the script directly
+    from camera import Camera
 """
 to do:
 - calibrate for potential distortion (not really needed for webcam, posibly needed for phone)
@@ -143,7 +149,7 @@ class MarkerDetector:
 
 # Example usage:
 if __name__ == "__main__":
-    detector  = MarkerDetector(cameraSource1='http://192.168.2.8:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
+    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
     #time.sleep(4)
     # Initialize variables for FPS calculation
     frame_count = 0

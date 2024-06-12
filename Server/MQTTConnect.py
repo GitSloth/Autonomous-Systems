@@ -137,7 +137,7 @@ def get_bot_positions(client):
 def periodic_position_updates(client):
     while True:
         get_bot_positions(client)
-        time.sleep(0.5)
+        time.sleep(1)
 
 
 def connect_mqtt():
