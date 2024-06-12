@@ -347,7 +347,7 @@ def pathing_light():
         print(F"No key with that name: {client_id}")
         return
     intersections = check_intersections(current_position, radius)
-    border_intersections = check_border_intersection(current_position, radius, 1100, 600)
+    border_intersections = check_border_intersection(current_position, radius, 1280, 720)
     # check available directions and steer in one of them 
     if intersections or border_intersections:
         avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)
