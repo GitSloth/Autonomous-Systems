@@ -14,6 +14,8 @@ bots_mqtt = []
 bots_matched = {}
 bots_position = {}
 
+started = False
+
 def start_camera():
     '''
     Setup the video feed needed to get the marker positions.
@@ -32,8 +34,10 @@ def on_connect(client, userdata, flags, rc):
         print("Failed to connect, return code", rc)
 
 def on_message(client, userdata, msg):
-    print(f"printers")
-    global next_robot_id
+    print(f"Received message on topic {msg.topic}")
+    global bots_mqtt
+    global started
+
     if msg.topic == "swarm/register":
         robot_id = msg.payload.decode()
         topic_receive = f"robots/{robot_id}/receive"
@@ -41,20 +45,38 @@ def on_message(client, userdata, msg):
         client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
         print(f"Assigned ID {robot_id} to new robot. Config sent.")
         bots_mqtt.append(robot_id)
-        #client.publish(f"robots/{robot_id}/config", f"{topic_receive},{topic_send}")
         print(f"Created topics for robot {robot_id}: {topic_receive}, {topic_send}")
+        client.subscribe(topic_send)
+        print(f"Subscribed to {topic_send}")
+
     elif msg.topic == "server/info":
         payload = msg.payload.decode()
         if payload == "start":
             print("Received 'start' message on 'server/info' topic")
+            started = True
             start_camera()
             setup_bots(client)
-            threading.Thread(target=periodic_position_updates, args=(client,)).start()
+            for robots in bots_mqtt:
+                positions = get_bot_positions(client)
+                print(positions)
+                client.publish(f"robots/{robots}/receive", positions)
         elif payload == "positions":
             get_bot_positions(client)
         else:
-            print("make the convo brief")
+            print("Unknown payload on 'server/info' topic")
 
+    else:
+        for robot_id in bots_mqtt:
+            print(robot_id)
+            if msg.topic == f"robots/{robot_id}/send":
+                payload = msg.payload.decode()
+                if payload == "request_positions":
+                    positions = get_bot_positions(client)
+                    print(positions)
+                    client.publish(f"robots/{robot_id}/receive", positions)
+                    print(f"Sent positions to robots/{robot_id}/receive")
+                else:
+                    print(f"Unknown payload on robots/{robot_id}/send topic")
 
 # todo:
 # - potentially add an error loop when it cannot find a match because it misses a detection that particular look
@@ -113,26 +135,29 @@ def setup_bots(client, threshold=10):
     print("Bots matched:", bots_matched)
 
 def get_bot_positions(client):
+    
     global detector
     '''
     get bot position and publish them
     '''
     global bots_matched
     global bots_position
-    print("get pos")
-    markers = detector.detectMarkers()
-    marker_id_to_position = {marker['id']: {'position': marker['position'], 'angle': marker['angle']} for marker in markers}
+    print(started)
+    if started == True:
+        print("get pos")
+        markers = detector.detectMarkers()
+        marker_id_to_position = {marker['id']: {'position': marker['position'], 'angle': marker['angle']} for marker in markers}
 
-    for bot, marker_id in bots_matched.items():
-        if marker_id in marker_id_to_position:
-            bots_position[bot] = marker_id_to_position[marker_id]
-            print("match")
+        for bot, marker_id in bots_matched.items():
+            if marker_id in marker_id_to_position:
+                bots_position[bot] = marker_id_to_position[marker_id]
+                print("match")
 
-    bots_position_json = json.dumps(bots_position)
-    
-    client.publish("robots/positions", bots_position_json)
-    client.loop()
-    print("bot positions:", bots_position_json)
+        bots_position_json = json.dumps(bots_position)
+        #print("bot positions:", bots_position_json)
+        return bots_position_json
+    else:
+        print("vergeten te starten bruh")
 
 def periodic_position_updates(client):
     while True:

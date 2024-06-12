@@ -376,11 +376,11 @@ def on_message(client, userdata, msg):
             print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
-    elif topic == "robots/positions":
-        print("Received robot positions.")
+    elif topic == topics['receive']:
+        print("Received message on the receive topic.")
         try:
             data = json.loads(message)
-
+            # If message is valid JSON, it is assumed to contain position data
             for robot_id, robot_info in data.items():
                 if robot_id != client_id:   
                     if robot_id in robot_data:
@@ -390,19 +390,18 @@ def on_message(client, userdata, msg):
                         robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
                     print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
                 else:
-    
                     print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
                     robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
             
             print("Updated robot data:", robot_data)
-            
             pathing_light()
-
-            
+            client.publish(topics['send'], f"request_positions")
         except json.JSONDecodeError:
-            print("Invalid JSON format received for robot positions.")
+            # If message is not valid JSON, it is assumed to be a command
+            print(f"Received command: {message} on {topic}")
+            handle_command(message)
     else:
-        print(f"Received command: {message} " + client_id)
+        print(f"Received message on unknown topic {topic}: {message}")
         handle_command(message)
 
 def handle_command(command):
