@@ -22,7 +22,7 @@ def start_camera():
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=2, debug=True)
+    detector = MarkerDetector(cameraSource1=1, camType1=0, enableCam2=False, cameraSource2=1, camType2=0, debug=True)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
@@ -34,7 +34,7 @@ def on_connect(client, userdata, flags, rc):
         print("Failed to connect, return code", rc)
 
 def on_message(client, userdata, msg):
-    print(f"Received message on topic {msg.topic}")
+    print(f"Received message on topic {msg.topic} Message: {msg.payload.decode()}")
     global bots_mqtt
     global started
 

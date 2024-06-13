@@ -46,11 +46,11 @@ PanMotor.freq(50)
 stop_duty = 4915
 duty_range = 1638
 
-left_velocity = 20
-right_velocity = 30
+left_velocity = 40
+right_velocity = 40
 
 # mqtt settings
-broker = '145.24.238.26' # change ip based on network 
+broker = '10.198.64.131' # change ip based on network 
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
@@ -85,14 +85,12 @@ def set_servo_speed_right(speed):
 
 # forward  
 def MoveForward(duration):
-    global left_velocity
-    global right_velocity
     print("MoveForward called with duration:", duration)
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(right_velocity)
-    end_time = time.time_ns() + (duration * 1000000000)
+    end_time = time.time() + duration
     while True:
-        if time.time_ns() > end_time:
+        if time.time() < end_time:
             break
     set_servo_speed_left(0)
     set_servo_speed_right(0)
@@ -101,9 +99,9 @@ def MoveBack(duration):
     print("MoveBack called with duration:", duration)
     set_servo_speed_left(-left_velocity)
     set_servo_speed_right(-right_velocity)
-    end_time = time.time_ns() + (duration * 1000000000)
+    end_time = time.time() + duration
     while True:
-        if time.time_ns() > end_time:
+        if time.time() < end_time:
             break
     set_servo_speed_left(0)
     set_servo_speed_right(0)
@@ -111,9 +109,9 @@ def MoveBack(duration):
 def SpinLeft(duration):
     set_servo_speed_left(0)
     set_servo_speed_right(right_velocity)
-    end_time = time.time_ns() + (duration * 1000000000)
+    end_time = time.time() + duration
     while True:
-        if time.time_ns() > end_time:
+        if time.time() < end_time:
             break
     set_servo_speed_left(0)
     set_servo_speed_right(0)
@@ -121,9 +119,9 @@ def SpinLeft(duration):
 def SpinRight(duration):
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(0)
-    end_time = time.time_ns() + (duration * 1000000000)
+    end_time = time.time() + duration
     while True:
-        if time.time_ns() > end_time:
+        if time.time() < end_time:
             break
     set_servo_speed_left(0)
     set_servo_speed_right(0)
@@ -282,7 +280,7 @@ def pathing_light():
         current_position = robot_data[client_id]['position']
         current_angle = robot_data[client_id]['angle']
     except KeyError:
-        print(f"No key with that name: {client_id}")
+        print(F"No key with that name: {client_id}")
         return
     intersections = check_intersections(current_position, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
@@ -295,13 +293,13 @@ def pathing_light():
         #highest_light_index = ldr_readings.index(max(ldr_readings))
 
 # MQTT callbacks
-def on_message(topic, msg):
+def on_message(client, userdata, msg):
     print("I love cheese")
     global topics
     global robot_data
-    topic = topic.decode('utf-8')
-    message = msg.decode('utf-8')
-
+    topic = msg.topic
+    message = msg.payload.decode()
+    
     if topic == f"robots/{client_id}/config":
         print("Received configuration response.")
         config = message.split(',')
@@ -320,7 +318,7 @@ def on_message(topic, msg):
             data = json.loads(message)
             # If message is valid JSON, it is assumed to contain position data
             for robot_id, robot_info in data.items():
-                if robot_id != client_id:
+                if robot_id != client_id:   
                     if robot_id in robot_data:
                         robot_data[robot_id]['position'] = robot_info['position']
                         robot_data[robot_id]['angle'] = robot_info['angle']
@@ -333,11 +331,14 @@ def on_message(topic, msg):
             
             print("Updated robot data:", robot_data)
             pathing_light()
-            client.publish(topics['send'], b"request_positions")
-        except ValueError:
+            client.publish(topics['send'], f"request_positions")
+        except json.JSONDecodeError:
             # If message is not valid JSON, it is assumed to be a command
             print(f"Received command: {message} on {topic}")
             handle_command(message)
+    else:
+        print(f"Received message on unknown topic {topic}: {message}")
+        handle_command(message)
         
 def handle_command(command):
     command = command.strip().upper()
@@ -400,8 +401,8 @@ def run_mqtt():
 
 #==============================WIFI=============================
 # Activate the Pico LAN
-ssid = 'tesla iot'
-password = 'fsL6HgjN'
+ssid = 'ssid'
+password = 'pass'
 
 network.hostname("mypicow")
 wlan = network.WLAN(network.STA_IF)
@@ -427,7 +428,6 @@ print(sta_if.ifconfig()[0])  # Print the IP on the serial
 
 # Listen for MQTT commands
 run_mqtt()
-
 
 
 

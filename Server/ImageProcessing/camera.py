@@ -13,7 +13,8 @@ class Camera:
         self.threadWait = False
         if self.camType == 0:
             if platform.system() == 'Windows':
-                self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW) #without dshow it takes 10 minutes for the camera to open.
+                self.capture = cv2.VideoCapture(source) #without dshow it takes 10 minutes for the camera to open.
+                #self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW) #without dshow it takes 10 minutes for the camera to open.
             else:
                 self.capture = cv2.VideoCapture(source)
             self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)

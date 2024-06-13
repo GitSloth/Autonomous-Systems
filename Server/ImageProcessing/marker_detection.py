@@ -149,7 +149,7 @@ class MarkerDetector:
 
 # Example usage:
 if __name__ == "__main__":
-    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
+    detector  = MarkerDetector(cameraSource1=1, camType1=0, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
     #time.sleep(4)
     # Initialize variables for FPS calculation
     frame_count = 0
@@ -159,7 +159,7 @@ if __name__ == "__main__":
         markerInfoList = detector.detectMarkers()
         for mark in markerInfoList:
                 print(f"id: {mark['id']}, pos: {mark['position']}, angle: {mark['angle']}")
-        time.sleep(2)
+        #time.sleep(2)
         endTime = (time.time_ns() -  beginTime) / 1000000
         # Increment frame count
         frame_count += 1

@@ -373,6 +373,7 @@ def on_message(client, userdata, msg):
             client.subscribe(topics['receive'])
             print(f"Subscribed to {topics['receive']}")
             client.publish(topics['send'], f"{client_id} connected successfully")
+            client.loop()
             print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
