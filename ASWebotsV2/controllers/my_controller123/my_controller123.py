@@ -4,7 +4,7 @@ from controller import Robot
 import threading
 import json
 import math
-
+import time
 
 robot = Robot()
 
@@ -23,6 +23,11 @@ distance_readings = []
 radius = 80
 robot_data = {}
 
+#ldr zooi
+last_spin_time = 0
+ldr_min_threshold = 280   
+ldr_max_threshold = 900  
+
 # Set initial motor velocities
 motor1.setVelocity(0)
 motor2.setVelocity(0)
@@ -39,6 +44,7 @@ motor3.setPosition(float('inf'))
 # Motor velocities
 forward_velocity = -3.0
 backward_velocity = 3.0
+
 
 # MQTT settings
 broker = 'localhost'
@@ -123,6 +129,10 @@ def SpinTop(speed, duration):
     step_count = 10
     angle_step = 180 / (step_count - 1)
     initial_position = -90
+    ldr_readings = []
+    distance_readings = []
+    angles = []
+
     for step in range(step_count):
         position_degrees = initial_position + step * angle_step
         position_radians = position_degrees * (3.14159 / 180)
@@ -137,10 +147,11 @@ def SpinTop(speed, duration):
         distance_image = range_finder.getRangeImage()
         distance_value = process_range_image(distance_image)
         distance_readings.append(distance_value)
+        angles.append(position_degrees)
         
     motor3.setPosition(0)
-    print("LDR Readings:", ldr_readings)
-    print("Distance Readings:", distance_readings)
+    return ldr_readings, distance_readings, angles
+    
 
 def process_range_image(image):
     if len(image) == 0:
@@ -260,19 +271,19 @@ def check_border_intersection(current_position, radius, width, height):
     intersections = []
     
     # Check intersection with the left border (x = 0)
-    if x - radius < 20:
+    if x - radius < 40:
         intersections.append((0, y))
     
     # Check intersection with the right border (x = width)
-    if x + radius > width - 20:
+    if x + radius > width - 40:
         intersections.append((width, y))
     
     # Check intersection with the top border (y = 0)
-    if y - radius < 20:
+    if y - radius < 40:
         intersections.append((x, 0))
     
     # Check intersection with the bottom border (y = height)
-    if y + radius > height - 20:
+    if y + radius > height - 40:
         intersections.append((x, height))
     
     return intersections
@@ -281,7 +292,7 @@ def check_border_intersection(current_position, radius, width, height):
 def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
     global robot_data  
     
-    print("Avoiding")
+  #  print("Avoiding")
     
     if border_intersections:
         for border in border_intersections:
@@ -314,7 +325,7 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
             SpinRight(0.3)
             return
     
-    print("No collisions found?")
+ #   print("No collisions found?")
 
 def calculate_relative_angle(current_position, current_angle, point):
     """Calculate the relative angle from the robot's perspective to a point."""
@@ -325,40 +336,61 @@ def calculate_relative_angle(current_position, current_angle, point):
     # Normalize the angle to the range [0, 360]
     relative_angle = (angle_to_point - current_angle) % 360
     return relative_angle
-
+    
 def pathing_light():
-    # radius for colission
-    # visual wall for colision
-    # check colision
-    # if collission move away
-    # scan ldr&distance
-    # if not high enough, random while avoiding collision
-    # if high enough: highest value
-    # ga naar highest value
-    # value ldr hoog genoeg, distance laag genoeg: trigger iets
-
     global robot_data
     global client_id
+    global last_spin_time
     
     try:
         current_position = robot_data[client_id]['position']
         current_angle = robot_data[client_id]['angle']
     except KeyError:
-        print(F"No key with that name: {client_id}")
+        print(f"No key with that name: {client_id}")
         return
+
     intersections = check_intersections(current_position, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
-    # check available directions and steer in one of them 
+    
     if intersections or border_intersections:
         avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)
     else:
-        MoveForwardCont()
-        #SpinTop()
-        #highest_light_index = ldr_readings.index(max(ldr_readings))
+        current_time = robot.getTime()
+        if current_time - last_spin_time >= 5:
+            ldr_readings, distance_readings, angles = SpinTop(1, 1)
+            highest_ldr_value = max(ldr_readings)
+            highest_ldr_index = ldr_readings.index(highest_ldr_value)
+            highest_ldr_angle = angles[highest_ldr_index]
+            print(highest_ldr_value)
+            if highest_ldr_value > ldr_max_threshold:
+                print("Found it!")
+                Stop()   
+            elif highest_ldr_value >= ldr_min_threshold:
+                steer_to_angle(highest_ldr_angle)  
+                last_spin_time = current_time
+            else:
+                print(f"LDR values to low ({ldr_min_threshold})")
+                MoveForward(1)
+        else:
+            MoveForward(1)
+            
+def steer_to_angle(target_angle):
+    if target_angle < 0:
+        target_angle += 180
+    elif target_angle > 180:
+        target_angle -= 180
+    
 
+    if target_angle > 90:
+        SpinRight((180 - target_angle) / 90)  
+    else:
+        SpinLeft(target_angle / 90) 
+    
+    MoveForward(1)   
+        
 
 def on_message(client, userdata, msg):
-    print("I love cheese")
+    #print("I love cheese")
     global topics
     global robot_data
     topic = msg.topic
@@ -389,9 +421,9 @@ def on_message(client, userdata, msg):
                         robot_data[robot_id]['angle'] = robot_info['angle']
                     else:
                         robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
-                    print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
+                   # print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
                 else:
-                    print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
+                   # print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
                     robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
             
             print("Updated robot data:", robot_data)
