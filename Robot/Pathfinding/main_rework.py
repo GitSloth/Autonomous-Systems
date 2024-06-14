@@ -54,12 +54,13 @@ broker = '10.198.64.131' # change ip based on network
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
-topics = {}  # Ensure topics is an empty dictionary initially
+topics = {}
 counter = 0
 subscribed_topics = set()
 # Setup MQTT client
 client = MQTTClient(client_id, broker, port)
-
+pos_updated = False
+started = False
 #=========================MOVES============================
 #set servo speed of the left motor
 #-100 to 100, 0 for stop
@@ -302,6 +303,7 @@ def on_message(topic, msg):
     print("I love cheese")
     global topics
     global robot_data
+    global pos_updated
     topic = topic.decode('utf-8')
     message = msg.decode('utf-8')
 
@@ -335,14 +337,14 @@ def on_message(topic, msg):
                     robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
             
             print("Updated robot data:", robot_data)
-            pathing_light()
-            client.publish(topics['send'], b"request_positions")
+            pos_updated = True
         except ValueError:
             # If message is not valid JSON, it is assumed to be a command
             print(f"Received command: {message} on {topic}")
             handle_command(message)
         
 def handle_command(command):
+    global started
     command = command.strip().upper()
     print(command)
     if command == "FRONT_LED_ON":
@@ -365,6 +367,8 @@ def handle_command(command):
         SpinRight(1)
     elif command == "SPIN_TOP":
         SpinTop(10.0, 1)
+    elif command == "START":
+        started = True
     elif command == "STOP":
         Stop()
     elif command == "REBOOT":
@@ -374,8 +378,11 @@ def handle_command(command):
 
 # Connect to MQTT broker and start listening for commands
 def connect_mqtt():
+    global client
+    print("did")
     try:
         client.set_callback(on_message)
+        print("bad")
         client.connect()
         print("Robot connected to MQTT Broker!")
         client.subscribe(f"robots/{client_id}/config")
@@ -390,18 +397,7 @@ def connect_mqtt():
             fled.value(False)
             time.sleep(0.2)
 
-# MQTT client loop
-def run_mqtt():
-    global client
-    connect_mqtt()
-    while True:
-        try:
-            client.check_msg()  # Check for new messages
-        except OSError as e:
-            print(f"Error in MQTT loop: {e}")
-            time.sleep(2)  # Wait before retrying
-            connect_mqtt()
-        time.sleep(0.01)
+
 
 #==============================WIFI=============================
 # Activate the Pico LAN
@@ -429,6 +425,27 @@ while True:
 
 sta_if = network.WLAN(network.STA_IF)
 print(sta_if.ifconfig()[0])  # Print the IP on the serial
+last_update = 0
+update_interval = 0.5
+print("dud")
+connect_mqtt()
+#setup mqtt
+print("dod")
+while True:
+    try:
+        client.check_msg()  # Check for new messages
+        if (time.time() - last_update) > update_interval and started:
+            client.publish(topics['send'], b"request_positions")
+        if pos_updated:
+            pathing_light()
+            pos_updated = False
+    except OSError as e:
+        print(f"Error in MQTT loop: {e}")
+        time.sleep(2)  # Wait before retrying
+        connect_mqtt()
+        time.sleep(0.01)
+    #except Exception as e:
+    #   print(e)
+    #time.sleep(0.01)
 
-# Listen for MQTT commands
-run_mqtt()
+

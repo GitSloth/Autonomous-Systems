@@ -5,6 +5,8 @@ from umqtt.simple import MQTTClient
 import network
 import math
 import json
+import _thread
+
 # pins
 BUILT_IN_LED = 25  # Built-in LED
 FLED = 20  # Front LED Red
@@ -22,12 +24,11 @@ robot_data = {}
 
 # Initialize ADC for LDR
 ldr = ADC(Pin(LDR_PIN))
-#add distance sensor?
 
-# Initialise leds
-built_in_led = Pin(BUILT_IN_LED, Pin.OUT)  # Built-in LED
-fled = Pin(FLED, Pin.OUT)  # Front LED
-bled = Pin(BLED, Pin.OUT)  # Back LED
+# Initialise LEDs
+built_in_led = Pin(BUILT_IN_LED, Pin.OUT)
+fled = Pin(FLED, Pin.OUT)
+bled = Pin(BLED, Pin.OUT)
 fled.value(True)
 bled.value(True)
 built_in_led.value(True)
@@ -36,6 +37,7 @@ built_in_led.value(False)
 time.sleep(1)
 fled.value(False)
 bled.value(False)
+
 # Set up servos
 LeftMotor = PWM(Pin(PWM_LM))
 LeftMotor.freq(50)
@@ -49,40 +51,31 @@ duty_range = 1638
 left_velocity = 20
 right_velocity = 30
 
-# mqtt settings
-broker = '10.198.64.131' # change ip based on network 
+# MQTT settings
+broker = '10.198.64.131'
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 topic_register = "swarm/register"
-topics = {}  # Ensure topics is an empty dictionary initially
+client = None
+topics = {'send': None, 'receive': None}
 counter = 0
 subscribed_topics = set()
-# Setup MQTT client
 client = MQTTClient(client_id, broker, port)
+# Event to signal position update
+position_update_flag = False
 
-#=========================MOVES============================
-#set servo speed of the left motor
-#-100 to 100, 0 for stop
+
+# Set servo speed of the left motor
 def set_servo_speed_left(speed):
-    #if speed > 100:
-    #    speed = 100
-    #elif speed < -100:
-    #    speed = -100
-     
     duty = stop_duty + int(speed * duty_range / 100)  
-    LeftMotor.duty_u16(duty)        
+    LeftMotor.duty_u16(duty)
 
-#set servo speed of the right motor
-#-100 to 100, 0 for stop
+# Set servo speed of the right motor
 def set_servo_speed_right(speed):
-    #if speed > 100:
-    #    speed = 100
-    #elif speed < -100:
-    #    speed = -100
     duty = stop_duty + int((speed * (-1)) * duty_range / 100)  
     RightMotor.duty_u16(duty)
 
-# forward  
+# Forward
 def MoveForward(duration):
     global left_velocity
     global right_velocity
@@ -148,7 +141,7 @@ def Stop():
     print("Stop")
     set_servo_speed_left(0)
     set_servo_speed_right(0)
-    
+
 def reboot():
     print('Rebooting...')
     machine.reset()
@@ -156,8 +149,6 @@ def reboot():
 def calculate_intersection_points(coord1, coord2, radius):
     """Calculate the intersection points of two circles."""
     d = math.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
-    
-    # No intersection if distance is greater than 2 times the radius or zero
     if d > 2 * radius or d == 0:
         return None
     
@@ -177,11 +168,7 @@ def calculate_intersection_points(coord1, coord2, radius):
     midpoint_y = (y3 + y4) / 2
     return (midpoint_x, midpoint_y)
 
-
 def check_intersections(current_position, radius):
-    '''
-    get the points of intersection of the radius 
-    '''
     global robot_data
     global client_id
     intersections = []
@@ -195,29 +182,18 @@ def check_intersections(current_position, radius):
     return intersections
 
 def check_border_intersection(current_position, radius, width, height):
-    """Check if a circle intersects with the borders of the image."""
     x, y = current_position
     radius = radius
     intersections = []
-    
-    # Check intersection with the left border (x = 0)
     if x - radius < 20:
         intersections.append((0, y))
-    
-    # Check intersection with the right border (x = width)
     if x + radius > width - 20:
         intersections.append((width, y))
-    
-    # Check intersection with the top border (y = 0)
     if y - radius < 20:
         intersections.append((x, 0))
-    
-    # Check intersection with the bottom border (y = height)
     if y + radius > height - 20:
         intersections.append((x, height))
-    
     return intersections
-
 
 def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
     global robot_data  
@@ -237,7 +213,6 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
                 SpinRight(0.3) 
                 return
     
-    # Handle intersections
     for point in intersections:
         angle = calculate_relative_angle(current_position, current_angle, point)
         print(angle)
@@ -246,7 +221,6 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
             SpinLeft(0.3)
             return
         elif 90 < angle <= 270:
-            #vooruit
             print("avoid forward")
             MoveForward(0.3)
             return
@@ -258,50 +232,49 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
     print("No collisions found?")
 
 def calculate_relative_angle(current_position, current_angle, point):
-    """Calculate the relative angle from the robot's perspective to a point."""
     dx = point[0] - current_position[0]
     dy = point[1] - current_position[1]
     angle_to_point = math.atan2(dy, dx) * 180 / math.pi  # Convert radians to degrees
-    
-    # Normalize the angle to the range [0, 360]
     relative_angle = (angle_to_point - current_angle) % 360
     return relative_angle
 
 def pathing_light():
-    # radius for colission
-    # visual wall for colision
-    # check colision
-    # if collission move away
-    # scan ldr&distance
-    # if not high enough, random while avoiding collision
-    # if high enough: highest value
-    # ga naar highest value
-    # value ldr hoog genoeg, distance laag genoeg: trigger iets
-
     global robot_data
     global client_id
     
+    client.publish(topics['send'], b"request_positions")
+    client.loop()
+    print("Requesting position updates...")
+    start_time = time.time()
+    timeout = 1
+    # Wait for the position update event
+    while not position_update_flag:
+        
+        if start_time + timeout < time.time():
+            print("Timeout waiting for position updates.")
+            return
+    position_update_flag = False
     try:
         current_position = robot_data[client_id]['position']
         current_angle = robot_data[client_id]['angle']
     except KeyError:
         print(f"No key with that name: {client_id}")
         return
+
     intersections = check_intersections(current_position, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
-    # check available directions and steer in one of them 
+
     if intersections or border_intersections:
         avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)
     else:
         MoveForwardCont()
-        #SpinTop()
-        #highest_light_index = ldr_readings.index(max(ldr_readings))
 
 # MQTT callbacks
 def on_message(topic, msg):
     print("I love cheese")
     global topics
     global robot_data
+    global position_update_flag
     topic = topic.decode('utf-8')
     message = msg.decode('utf-8')
 
@@ -321,7 +294,6 @@ def on_message(topic, msg):
         print("Received message on the receive topic.")
         try:
             data = json.loads(message)
-            # If message is valid JSON, it is assumed to contain position data
             for robot_id, robot_info in data.items():
                 if robot_id != client_id:
                     if robot_id in robot_data:
@@ -335,13 +307,12 @@ def on_message(topic, msg):
                     robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
             
             print("Updated robot data:", robot_data)
-            pathing_light()
-            client.publish(topics['send'], b"request_positions")
+            # Signal that the position update has been received
+            position_update_flag = True
         except ValueError:
-            # If message is not valid JSON, it is assumed to be a command
             print(f"Received command: {message} on {topic}")
             handle_command(message)
-        
+
 def handle_command(command):
     command = command.strip().upper()
     print(command)
@@ -372,8 +343,8 @@ def handle_command(command):
     else:
         print("Invalid command.")
 
-# Connect to MQTT broker and start listening for commands
 def connect_mqtt():
+    global client
     try:
         client.set_callback(on_message)
         client.connect()
@@ -390,21 +361,19 @@ def connect_mqtt():
             fled.value(False)
             time.sleep(0.2)
 
-# MQTT client loop
 def run_mqtt():
     global client
     connect_mqtt()
     while True:
         try:
-            client.check_msg()  # Check for new messages
+            client.check_msg()
         except OSError as e:
             print(f"Error in MQTT loop: {e}")
-            time.sleep(2)  # Wait before retrying
+            time.sleep(2)
             connect_mqtt()
         time.sleep(0.01)
 
 #==============================WIFI=============================
-# Activate the Pico LAN
 ssid = 'ssid'
 password = 'pass'
 
@@ -428,7 +397,21 @@ while True:
             break
 
 sta_if = network.WLAN(network.STA_IF)
-print(sta_if.ifconfig()[0])  # Print the IP on the serial
+print(sta_if.ifconfig()[0])
 
-# Listen for MQTT commands
-run_mqtt()
+# Start MQTT in a separate thread
+_thread.start_new_thread(run_mqtt, ())
+time.sleep(1)
+# Main loop for pathing and periodic tasks
+last_pathing_time = 0
+pathing_interval = 0.5  # Time interval in seconds
+
+while True:
+    current_time = time.time()
+    
+    if current_time - last_pathing_time >= pathing_interval:
+        pathing_light()
+        last_pathing_time = current_time
+    
+    
+    time.sleep(0.01)

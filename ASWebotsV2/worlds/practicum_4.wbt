@@ -10,8 +10,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.24989862614538425 0.9099172124681821 -0.3310609356369042 1.3850286457548842
-  position -10.779342660979475 -0.7579957166512887 43.29418849302777
+  orientation 0.013357840454278931 0.9998353488054589 -0.012281831193450544 1.6033310611896896
+  position -3.0980546659202552 -7.297299685002664 29.23986184832619
 }
 TexturedBackground {
   texture "dusk"
@@ -67,13 +67,12 @@ DEF Centrale_server Robot {
 }
 DEF Charriot Robot {
   translation 2.686505272719041 -11.254338801939026 -0.05653132589102232
-  rotation 0.004606920685974836 -0.0013332593500547571 -0.999988499284516 0.5808245383406856
+  rotation -0.0022863390020607666 0.0031057286444142974 -0.9999925635241268 -0.728175307179586
   children [
     DEF qr-code Pose {
       children [
         DEF QR-CODE Transform {
           translation -0.02 -0.19 1.03
-          rotation 0 0 1 1.5708
           scale 7 7 0.9
           children [
             Shape {

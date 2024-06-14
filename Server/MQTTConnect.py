@@ -60,6 +60,8 @@ def on_message(client, userdata, msg):
                 positions = get_bot_positions(client)
                 print(positions)
                 client.publish(f"robots/{robots}/receive", positions)
+                client.loop()
+                client.publish(f"robots/{robots}/receive", "START")
         elif payload == "positions":
             get_bot_positions(client)
         else:

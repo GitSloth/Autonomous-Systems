@@ -297,6 +297,7 @@ def avoid_collisions(current_position, current_angle, intersections, border_inte
     if border_intersections:
         for border in border_intersections:
             border_angle = calculate_relative_angle(current_position, current_angle, border)
+            print(f"border angle: {border_angle}")
             if 0 <= border_angle <= 90:
                 SpinLeft(0.3)
                 return
@@ -357,7 +358,7 @@ def pathing_light():
     else:
         current_time = robot.getTime()
         if current_time - last_spin_time >= 5:
-            ldr_readings, distance_readings, angles = SpinTop(1, 1)
+            ldr_readings, distance_readings, angles = SpinTop(10, 0.1)
             highest_ldr_value = max(ldr_readings)
             highest_ldr_index = ldr_readings.index(highest_ldr_value)
             highest_ldr_angle = angles[highest_ldr_index]
