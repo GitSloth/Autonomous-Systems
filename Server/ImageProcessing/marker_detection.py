@@ -18,6 +18,7 @@ to do:
 class MarkerDetector:
     def __init__(self, camType1=0, cameraSource1=0, enableCam2=True, camType2=0, cameraSource2=0, debug=False):
         self.DEBUG = debug
+        self.offset = 40
         self.enableCam2 = enableCam2
         self.cam1 = Camera(camType1, cameraSource1)
         if self.enableCam2:
@@ -87,28 +88,31 @@ class MarkerDetector:
             for markerId, corners in markers:
                 # Calculate the center of the marker
                 corners = corners.reshape((4, 2))
-                centerX = int(corners[:, 0].mean())
-                centerY = int(corners[:, 1].mean())
+                (top_left, top_right, bottom_right, bottom_left) = corners
+                top_right = (int(top_right[0]), int(top_right[1]))
+                bottom_right = (int(bottom_right[0]), int(bottom_right[1]))
+                bottom_left = (int(bottom_left[0]), int(bottom_left[1]))
+                top_left = (int(top_left[0]), int(top_left[1]))
+                centerX = int((top_left[0] + bottom_right[0]) / 2.0)
+                centerY = int((top_left[1] + bottom_right[1]) / 2.0)
                 if self.DEBUG:
                     cv2.circle(input1, (centerX, centerY), 5, (0, 255, 0), -1)
                 # Calculate the angle of the marker
-                topLeft = corners[0]
-                topRight = corners[1]
-                angle = self.calculateAngle(topLeft, topRight)
-                # Check if the marker ID is already in the list
-                #markerFound = False
-                # for markerInfo in self.markerInfoList:
-                #     if markerInfo['id'] == markerId:
-                #         # Update the position and angle
-                #         markerInfo['position'] = (centerX, centerY)
-                #         markerInfo['angle'] = angle
-                #         markerFound = True
-                #         break
-                #if not markerFound:
-                    # Add new marker information to the list
+                top_mid = (top_left + top_right) / 2
+                bottom_mid = (bottom_left + bottom_right) / 2
+                vector = bottom_mid - top_mid
+                angle_rad = np.arctan2(vector[1], vector[0])
+                angle = np.degrees(angle_rad)
+                #topLeft = corners[1]
+                #topRight = corners[2]
+                #angle = self.calculateAngle(topLeft, topRight)
+                #if angle < 0:
+                #    angle += 360
+                adjusted_centerX = int(centerX + self.offset * np.cos(np.radians(angle)))
+                adjusted_centerY = int(centerY + self.offset * np.sin(np.radians(angle)))
                 newMarkerInfoList.append({
                     'id': int(markerId),
-                    'position': (centerX, centerY),
+                    'position': (adjusted_centerX, adjusted_centerY),
                     'angle': float(angle)
                 })
 
@@ -116,11 +120,11 @@ class MarkerDetector:
                 # Draw an arrow indicating the orientation of the marker
                 arrow_length = 50  # Length of the arrow
                 for marker in newMarkerInfoList:
-                    centerX, centerY = marker['position']
+                    posX, posY = marker['position']
                     angle = marker['angle']
-                    endX = int(centerX + arrow_length * np.cos(np.radians(angle-90)))
-                    endY = int(centerY + arrow_length * np.sin(np.radians(angle-90)))
-                    cv2.arrowedLine(input1, (centerX, centerY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
+                    endX = int(posX + arrow_length * np.cos(np.radians(angle)))
+                    endY = int(posY + arrow_length * np.sin(np.radians(angle)))
+                    cv2.arrowedLine(input1, (posX, posY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
                 corners_list = [np.array(corners, dtype=np.int32) for corners in markersCorners]
                 aruco.drawDetectedMarkers(input1, corners_list, markersId)
                 cv2.imshow("Output", input1)
@@ -149,7 +153,8 @@ class MarkerDetector:
 
 # Example usage:
 if __name__ == "__main__":
-    detector  = MarkerDetector(cameraSource1=1, camType1=0, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
+    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
+
     #time.sleep(4)
     # Initialize variables for FPS calculation
     frame_count = 0

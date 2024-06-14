@@ -22,7 +22,7 @@ def start_camera():
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
+    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=1, camType2=2, debug=True)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
@@ -60,6 +60,8 @@ def on_message(client, userdata, msg):
                 positions = get_bot_positions(client)
                 print(positions)
                 client.publish(f"robots/{robots}/receive", positions)
+                client.loop()
+                client.publish(f"robots/{robots}/receive", "START")
         elif payload == "positions":
             get_bot_positions(client)
         else:

@@ -5,18 +5,14 @@ import platform
 
 class Camera:
     CAMERA = 0
-    VIDEO = 1 #not really used rn
+    WEBCAM = 1 #not really used rn
     WEB = 2
 
     def __init__(self,camType,source=0):
         self.camType = camType
         self.threadWait = False
         if self.camType == 0:
-            if platform.system() == 'Windows':
-                self.capture = cv2.VideoCapture(source) #without dshow it takes 10 minutes for the camera to open.
-                #self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW) #without dshow it takes 10 minutes for the camera to open.
-            else:
-                self.capture = cv2.VideoCapture(source)
+            self.capture = cv2.VideoCapture(source)
             self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -27,7 +23,10 @@ class Camera:
             self.thread.daemon = True
             self.thread.start()
         if self.camType == 1: #not used rn
-            self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+            if platform.system() == 'Windows':
+                self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW) #without dshow it takes 10 minutes for the camera to open.
+            else:
+                self.capture = cv2.VideoCapture(source)
             self.frame = np.zeros((1920,1080, 3), dtype = np.uint8)
         if self.camType == 2:
             self.capture = cv2.VideoCapture(source)
