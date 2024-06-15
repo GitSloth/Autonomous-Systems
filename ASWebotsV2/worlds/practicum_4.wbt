@@ -10,8 +10,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.09613821864926621 0.9902608606994499 -0.10070189015967251 1.53421372792349
-  position 2.48009666768973 0.6088984367477766 25.957962682241963
+  orientation 0.0011554288617716538 0.9999975693586416 -0.001877834112529539 1.1031874768899905
+  position -18.70066211411991 0.03411136835951686 42.92856504439947
 }
 TexturedBackground {
   texture "dusk"
@@ -66,8 +66,237 @@ DEF Centrale_server Robot {
   supervisor TRUE
 }
 DEF Charriot Robot {
-  translation 1.0867049571123195 -2.0150125889552575 -0.05649097612039025
-  rotation 0.0009080594733728907 -0.0015441494791973113 -0.9999983955139022 1.8211107175394416
+  translation -2.00509 -7.12418 -0.0560675
+  rotation 0.0010806904682730788 -0.0034591114988646973 -0.9999934333063144 0.91734
+  children [
+    DEF qr-code Pose {
+      children [
+        DEF QR-CODE Transform {
+          translation -0.02 -0.19 1.03
+          scale 7 7 0.9
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColorMap ImageTexture {
+                  url [
+                    "../../markers/marker3.png"
+                  ]
+                }
+                metalness 0
+                IBLStrength 0
+              }
+              geometry Box {
+                size 0.15 0.15 0.01
+              }
+            }
+          ]
+        }
+        Transform {
+          translation 0.36 -0.23 0.63
+          rotation 0 0 1 -1.5707953071795862
+          scale 2 0.5 7.5
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0 0.1 0.2
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.1 0.1 0.1
+              }
+            }
+          ]
+        }
+        Transform {
+          translation -0.42 -0.23 0.63
+          rotation 0 0 1 -1.5707953071795862
+          scale 2 0.5 7.5
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0 0.1 0.2
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.1 0.1 0.1
+              }
+            }
+          ]
+        }
+        Transform {
+          translation -0.02 -0.21 1.01
+          rotation 0.5773509358560258 -0.577349935856137 0.577349935856137 -2.094395307179586
+          scale 12 0.3 12
+          children [
+            Shape {
+              appearance PBRAppearance {
+                roughness 1
+                metalness 0
+              }
+              geometry Box {
+                size 0.1 0.1 0.1
+              }
+            }
+          ]
+        }
+      ]
+    }
+    DEF TopSpin HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 0 1
+        anchor -0.019 0.33 0
+      }
+      device [
+        RotationalMotor {
+          name "motor3"
+        }
+      ]
+      endPoint Solid {
+        translation 0 -0.010000000000000009 0
+        children [
+          RangeFinder {
+            translation -0.02 0.32 0.76
+            rotation -3.69431e-07 -3.88407e-07 -1 -1.5708053071795867
+            fieldOfView 0.1
+            maxRange 14
+          }
+          LightSensor {
+            translation -0.03 0.39 0.89
+            rotation 0 0 1 1.5708
+            lookupTable [
+              0 0 0
+              10 1000 0
+            ]
+          }
+          Transform {
+            translation -0.04 0.19 0
+            scale 0.01 0.01 0.01
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0 0.1 0.2
+                  roughness 1
+                  metalness 0
+                }
+                geometry Mesh {
+                  url [
+                    "../../Robot/top.stl"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+        name "solid(2)"
+      }
+    }
+    DEF bomby Pose {
+      translation -0.03 -0.48 0.15
+      children [
+        Shape {
+          geometry Capsule {
+            height 0.1
+            radius 0.05
+          }
+        }
+      ]
+    }
+    DEF body Transform {
+      translation -0.04 0.18 0
+      scale 0.01 0.01 0.01
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 0.1 0.2
+            roughness 1
+            metalness 0
+          }
+          geometry Mesh {
+            url [
+              "../../Robot/WeirdBODY.stl"
+            ]
+          }
+        }
+      ]
+    }
+    DEF wheel1 HingeJoint {
+      jointParameters HingeJointParameters {
+        position -323.3596074573378
+        anchor 0.41 0.34 0.29
+      }
+      device [
+        RotationalMotor {
+          name "motor1"
+          maxTorque 300
+        }
+      ]
+      endPoint Solid {
+        translation 0.40998574933038956 0.3402053569540567 0.2897779655419033
+        rotation 0.7047158476454257 -0.07937402523699916 0.7050356999436731 3.300244736354296
+        children [
+          DEF wheel Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.1
+              radius 0.25
+            }
+          }
+        ]
+        boundingObject USE wheel
+        physics DEF wheel_physics Physics {
+        }
+      }
+    }
+    DEF wheel2 HingeJoint {
+      jointParameters HingeJointParameters {
+        position -329.4571257133367
+        anchor -0.47 0.34 0.29
+      }
+      device [
+        RotationalMotor {
+          name "motor2"
+          maxTorque 300
+        }
+      ]
+      endPoint Solid {
+        translation -0.4700171891213426 0.3402538659929273 0.289841878275758
+        rotation -0.6994158156891898 0.14547123532725045 -0.6997539828083787 2.8525804246560593
+        children [
+          DEF wheel Shape {
+            appearance PBRAppearance {
+              baseColor 0 0 0
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.1
+              radius 0.25
+            }
+          }
+        ]
+        name "solid(1)"
+        boundingObject USE wheel
+        physics DEF wheel_physics Physics {
+        }
+      }
+    }
+  ]
+  name "Charriot(1)"
+  boundingObject USE bomby
+  physics Physics {
+    mass 5
+  }
+  controller "vector_controller"
+}
+DEF Charriot Robot {
+  translation -2.48192 0.450825 0.0383278
+  rotation -0.001462430585667461 0.0010297304123816897 0.9999984004747507 -2.2263353071795864
   children [
     DEF qr-code Pose {
       children [
@@ -223,7 +452,7 @@ DEF Charriot Robot {
     }
     DEF wheel1 HingeJoint {
       jointParameters HingeJointParameters {
-        position -322.599995048726
+        position -323.3596074573378
         anchor 0.41 0.34 0.29
       }
       device [
@@ -233,8 +462,8 @@ DEF Charriot Robot {
         }
       ]
       endPoint Solid {
-        translation 0.40998574933038956 0.34030180684843625 0.2899804192594953
-        rotation 0.6610290596860295 -0.3544066676590209 0.6613898216403332 3.8227675471301867
+        translation 0.40998574933038956 0.3402053569540567 0.2897779655419033
+        rotation 0.7047158476454257 -0.07937402523699916 0.7050356999436731 3.300244736354296
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -251,13 +480,11 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 1.6233532406281224e-11 -1.7552143458029226e-12 4.633426796313632e-17
-        angularVelocity 2.279708913947723e-11 8.928800000793592e-11 1.4054520104730574e-11
       }
     }
     DEF wheel2 HingeJoint {
       jointParameters HingeJointParameters {
-        position -333.5313473152407
+        position -329.4571257133367
         anchor -0.47 0.34 0.29
       }
       device [
@@ -267,8 +494,8 @@ DEF Charriot Robot {
         }
       ]
       endPoint Solid {
-        translation -0.4700171891213426 0.33997576741277985 0.29029809931861605
-        rotation 0.24991545239460183 -0.9353885520173807 0.2501809813099899 4.645240701318492
+        translation -0.4700171891213426 0.3402538659929273 0.289841878275758
+        rotation -0.6994158156891898 0.14547123532725045 -0.6997539828083787 2.8525804246560593
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -286,8 +513,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 4.2218696321031205e-12 1.3087713128075545e-12 -3.2423613075171234e-16
-        angularVelocity 1.8294064553123493e-12 7.28336284743524e-12 1.4085847373089666e-11
       }
     }
   ]
@@ -296,9 +521,7 @@ DEF Charriot Robot {
   physics Physics {
     mass 5
   }
-  controller "my_controller123"
-  linearVelocity 7.368370810315064e-12 -1.141787341512219e-11 5.002246532167234e-16
-  angularVelocity -2.873986756703763e-14 -7.593906931307607e-16 1.4089337670167148e-11
+  controller "vector_controller"
 }
 FloorLight {
   translation 0.31 7.51 0

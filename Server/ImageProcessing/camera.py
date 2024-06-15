@@ -27,7 +27,7 @@ class Camera:
                 self.capture = cv2.VideoCapture(source, cv2.CAP_DSHOW) #without dshow it takes 10 minutes for the camera to open.
             else:
                 self.capture = cv2.VideoCapture(source)
-            self.frame = np.zeros((1920,1080, 3), dtype = np.uint8)
+            self.frame = np.zeros((1280,720, 3), dtype = np.uint8)
         if self.camType == 2:
             self.capture = cv2.VideoCapture(source)
             self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)

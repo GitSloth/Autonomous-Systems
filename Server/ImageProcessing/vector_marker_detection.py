@@ -18,7 +18,7 @@ to do:
 class MarkerDetector:
     def __init__(self, camType1=0, cameraSource1=0, enableCam2=True, camType2=0, cameraSource2=0, debug=False):
         self.DEBUG = debug
-        self.offset = 1
+        self.offset = 50
         self.enableCam2 = enableCam2
         self.cam1 = Camera(camType1, cameraSource1)
         if self.enableCam2:
@@ -39,6 +39,14 @@ class MarkerDetector:
             #     cv2.namedWindow("Rejected2", cv2.WINDOW_AUTOSIZE)
 
 
+    def normalize_vector(self, vector):
+        """Normalize a 2D vector."""
+        magnitude = np.sqrt(vector[0]**2 + vector[1]**2)
+        if magnitude == 0:
+            return (0, 0)
+        else:
+            return (vector[0] / magnitude, vector[1] / magnitude)
+        
     def calculateAngle(self, corner1, corner2):
         """
         Calculate the angle between the vector formed by two corners and the vertical axis.
@@ -103,34 +111,30 @@ class MarkerDetector:
                 bottom_mid = ((bottom_left[0] + bottom_right[0]) / 2, (bottom_left[1] + bottom_right[1]) / 2)
                 
                 vector = (top_mid[0] - bottom_mid[0], top_mid[1] - bottom_mid[1])
-                print(f"bottom mid: {bottom_mid}")
-                print(f"top mid: {top_mid}")
-                print(f"vector:{vector}")
-                angle_rad = np.arctan2(vector[1], vector[0])  # Angle with respect to the vertical axis
-                angle_deg = np.degrees(angle_rad)
-                
-                # Adjust the angle so that 0 degrees points in the direction of -90 degrees in your current system
-                adjusted_angle = (angle_deg - 90) % 360
-                
-                adjusted_centerX = int(centerX + self.offset * vector[0])
-                adjusted_centerY = int(centerY + self.offset * vector[1])
+                # print(f"bottom mid: {bottom_mid}")
+                # print(f"top mid: {top_mid}")
+                # print(f"vector:{vector}")
+                norm_vector =self.normalize_vector(vector)
+                # print(f"norm vector: {norm_vector}")
+                adjusted_centerX = int(centerX + self.offset * norm_vector[0])
+                adjusted_centerY = int(centerY + self.offset * norm_vector[1])
                 
                 cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 5, (0, 255, 255), -1)
                 
                 newMarkerInfoList.append({
                     'id': int(markerId),
                     'position': (adjusted_centerX, adjusted_centerY),
-                    'angle': float(angle_deg)
+                    'vector': norm_vector
                 })
 
             if self.DEBUG:
                 # Draw an arrow indicating the orientation of the marker
-                arrow_length = 50  # Length of the arrow
+                arrow_length = 40  # Length of the arrow
                 for marker in newMarkerInfoList:
                     posX, posY = marker['position']
-                    angle = marker['angle']
-                    endX = int(posX + arrow_length * np.cos(np.radians(angle)))
-                    endY = int(posY + arrow_length * np.sin(np.radians(angle)))
+                    vec = marker['vector']
+                    endX = int(posX + arrow_length * vec[0])
+                    endY = int(posY + arrow_length * vec[1])
                     cv2.arrowedLine(input1, (posX, posY), (endX, endY), (255, 255, 0), 2, tipLength=0.3)
                 corners_list = [np.array(corners, dtype=np.int32) for corners in markersCorners]
                 aruco.drawDetectedMarkers(input1, corners_list, markersId)
@@ -170,7 +174,7 @@ if __name__ == "__main__":
         beginTime = time.time_ns()
         markerInfoList = detector.detectMarkers()
         for mark in markerInfoList:
-                print(f"id: {mark['id']}, pos: {mark['position']}, angle: {mark['angle']}")
+                print(f"id: {mark['id']}, pos: {mark['position']}, vec: {mark['vector']}")
         #time.sleep(2)
         endTime = (time.time_ns() -  beginTime) / 1000000
         # Increment frame count
