@@ -66,7 +66,7 @@ def on_message(client, userdata, msg):
             get_bot_positions(client)
         else:
             print("Unknown payload on 'server/info' topic")
-
+ 
     else:
         for robot_id in bots_mqtt:
             print(robot_id)
@@ -77,8 +77,30 @@ def on_message(client, userdata, msg):
                     print(positions)
                     client.publish(f"robots/{robot_id}/receive", positions)
                     print(f"Sent positions to robots/{robot_id}/receive")
+                elif payload.startswith("foundit"):
+                    try:
+                        # Extract coordinates from the payload
+                        start_idx = payload.index("[") + 1
+                        end_idx = payload.index("]")
+                        coordinates_str = payload[start_idx:end_idx]
+                        coordinates = list(map(int, coordinates_str.split(",")))
+
+                        if len(coordinates) == 2:
+                            x = coordinates[0]
+                            y = coordinates[1]
+
+                            for other_robot_id in bots_mqtt:
+                                client.publish(f"robots/{other_robot_id}/receive", f"foundit {{{x},{y}}}")
+                                print(f"Broadcasted position as foundit {{{x},{y}}} to robots/{other_robot_id}/receive")
+                        else:
+                            print("Error: Invalid number of coordinates.")
+                    
+                    except ValueError as ve:
+                        print(f"Error parsing coordinates: {ve}")
+                    except Exception as e:
+                        print(f"Error processing 'foundit' payload: {e}")
                 else:
-                    print(f"Unknown payload on robots/{robot_id}/send topic")
+                 print(f"Unknown payload on robots/{robot_id}/send topic")
 
 # todo:
 # - potentially add an error loop when it cannot find a match because it misses a detection that particular look
@@ -161,6 +183,15 @@ def get_bot_positions(client):
     else:
         print("vergeten te starten bruh")
 
+def get_specific_bot_position(bot_id):
+    global bots_position
+    if bot_id in bots_position:
+        specific_position = json.dumps({bot_id: bots_position[bot_id]})
+        return specific_position
+    else:
+        print(f"No position found for robot {bot_id}")
+        return None
+    
 def periodic_position_updates(client):
     while True:
         get_bot_positions(client)

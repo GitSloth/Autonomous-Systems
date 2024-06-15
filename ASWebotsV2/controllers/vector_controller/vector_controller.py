@@ -69,6 +69,8 @@ orientation = 0.0
 min_speed = 0.001
 max_speed = 0.1
 
+notfinished = True
+
 # Movement functions
 def MoveForward(duration):
     print("MoveForward called with duration:", duration)
@@ -287,6 +289,7 @@ def pathing_light():
     global robot_data
     global client_id
     global last_spin_time
+    global notfinished
     
     try:
         current_position = robot_data[client_id]['position']
@@ -310,7 +313,10 @@ def pathing_light():
             print(highest_ldr_value)
             if highest_ldr_value > ldr_max_threshold:
                 print("Found it!")
+                notfinished = False
+                client.publish(topics['send'], f"foundit {current_position}")
                 Stop()   
+                print("currentposition! {current_position}")
             elif highest_ldr_value >= ldr_min_threshold:
                 steer_to_angle(highest_ldr_angle)  
                 last_spin_time = current_time
@@ -336,9 +342,11 @@ def steer_to_angle(target_angle):
         
 
 def on_message(client, userdata, msg):
-    #print("I love cheese")
     global topics
     global robot_data
+    global client_id
+    global notfinished
+
     topic = msg.topic
     message = msg.payload.decode()
     
@@ -351,34 +359,42 @@ def on_message(client, userdata, msg):
             client.subscribe(topics['receive'])
             print(f"Subscribed to {topics['receive']}")
             client.publish(topics['send'], f"{client_id} connected successfully")
-            client.loop()
             print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
+    
     elif topic == topics['receive']:
         print("Received message on the receive topic.")
-        try:
-            data = json.loads(message)
-            # If message is valid JSON, it is assumed to contain position data
-            for robot_id, robot_info in data.items():
-                if robot_id != client_id:   
-                    if robot_id in robot_data:
-                        robot_data[robot_id]['position'] = robot_info['position']
-                        robot_data[robot_id]['vector'] = robot_info['vector']
+        if message.startswith('foundit'):
+            try:
+                coordinates_str = message.replace("foundit {", "").replace("}", "")
+                x_str, y_str = coordinates_str.split(',')
+                x = int(x_str.strip())
+                y = int(y_str.strip())
+                print(f"Received coordinates: x={x}, y={y}")
+            except ValueError:
+                print("Error: Unable to parse coordinates from the received message.")
+        else:
+            try:
+                data = json.loads(message)
+                for robot_id, robot_info in data.items():
+                    if robot_id != client_id:
+                        if robot_id in robot_data:
+                            robot_data[robot_id]['position'] = robot_info['position']
+                            robot_data[robot_id]['vector'] = robot_info['vector']
+                        else:
+                            robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
                     else:
                         robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
-                   # print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
-                else:
-                   # print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
-                    robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
-            
-            print("Updated robot data:", robot_data)
-            pathing_light()
-            client.publish(topics['send'], f"request_positions")
-        except json.JSONDecodeError:
-            # If message is not valid JSON, it is assumed to be a command
-            print(f"Received command: {message} on {topic}")
-            handle_command(message)
+                
+                print("Updated robot data:", robot_data)
+                if notfinished:
+                    pathing_light()
+                    client.publish(topics['send'], f"request_positions")
+            except json.JSONDecodeError:
+                print(f"Received command: {message} on {topic}")
+                handle_command(message)
+    
     else:
         print(f"Received message on unknown topic {topic}: {message}")
         handle_command(message)
