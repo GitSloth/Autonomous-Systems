@@ -1,28 +1,39 @@
 import random
 import time
-from machine import Pin, PWM, ADC
+from machine import Pin, PWM, ADC, I2C
+from vl53l0x import VL53L0X
 from umqtt.simple import MQTTClient
 import network
 import math
 import json
-# pins
+
+# Pins
 BUILT_IN_LED = 25  # Built-in LED
 FLED = 20  # Front LED Red
 BLED = 21  # Back LED Green
 PWM_LM = 6  # Left Continuous Servo
 PWM_RM = 7  # Right Continuous Servo
 PWM_SC = 10  # Panning Servo
-LDR_PIN = 27
+LDR_PIN = 27 # ldr sensor
+sda_pin = Pin(0) # SDA pin
+scl_pin = Pin(1) # SCL pin
 
-# sensor readings
+# Sensors
+ldr = ADC(Pin(LDR_PIN))
 ldr_readings = []
 distance_readings = []
+<<<<<<< Updated upstream
 radius = 120
 robot_data = {}
+=======
+>>>>>>> Stashed changes
 
-# Initialize ADC for LDR
-ldr = ADC(Pin(LDR_PIN))
-#add distance sensor?
+
+# Initialize the I2C bus
+i2c = I2C(0, sda=sda_pin, scl=scl_pin, freq=400000)
+devices = i2c.scan()
+print("I2C devices found:", devices)
+distance_sensor = VL53L0X(i2c)
 
 # Initialise leds
 built_in_led = Pin(BUILT_IN_LED, Pin.OUT)  # Built-in LED
@@ -36,6 +47,10 @@ built_in_led.value(False)
 time.sleep(1)
 fled.value(False)
 bled.value(False)
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 # Set up servos
 LeftMotor = PWM(Pin(PWM_LM))
 LeftMotor.freq(50)
@@ -46,20 +61,35 @@ PanMotor.freq(50)
 stop_duty = 4915
 duty_range = 1638
 
+<<<<<<< Updated upstream
 left_velocity = 20
+=======
+# Speed
+left_velocity = 25
+>>>>>>> Stashed changes
 right_velocity = 30
 
 # mqtt settings
 broker = '10.198.64.131' # change ip based on network 
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
+client = MQTTClient(client_id, broker, port)
 topic_register = "swarm/register"
+<<<<<<< Updated upstream
 topics = {}  # Ensure topics is an empty dictionary initially
+=======
+topics = {}
+>>>>>>> Stashed changes
 counter = 0
 subscribed_topics = set()
-# Setup MQTT client
-client = MQTTClient(client_id, broker, port)
+update_interval = 50  # Update interval in milliseconds
 
+# positioning
+radius = 80
+border_buffer = 40
+robot_data = {}
+pos_updated = False
+started = False
 #=========================MOVES============================
 #set servo speed of the left motor
 #-100 to 100, 0 for stop
@@ -81,7 +111,15 @@ def set_servo_speed_right(speed):
     #    speed = -100
     duty = stop_duty + int((speed * (-1)) * duty_range / 100)  
     RightMotor.duty_u16(duty)
-
+    
+def set_pan_servo_angle(angle):
+    # Convert the angle to a duty cycle
+    # 0 degrees corresponds to 1 ms pulse width (duty of 26 out of 1023)
+    # 180 degrees corresponds to 2 ms pulse width (duty of 128 out of 1023)
+    # Map the angle to a value between 26 and 128
+    duty = int((angle / 180.0 * 102) + 26)
+    PanMotor.duty(duty)
+    
 # forward  
 def MoveForward(duration):
     global left_velocity
@@ -89,10 +127,16 @@ def MoveForward(duration):
     print("MoveForward called with duration:", duration)
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(right_velocity)
+<<<<<<< Updated upstream
     end_time = time.time_ns() + (duration * 1000000000)
     while True:
         if time.time_ns() > end_time:
             break
+=======
+    end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
+    while time.ticks_diff(end_time, time.ticks_ms()) > 0:
+        pass
+>>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
@@ -100,44 +144,69 @@ def MoveBack(duration):
     print("MoveBack called with duration:", duration)
     set_servo_speed_left(-left_velocity)
     set_servo_speed_right(-right_velocity)
+<<<<<<< Updated upstream
     end_time = time.time_ns() + (duration * 1000000000)
     while True:
         if time.time_ns() > end_time:
             break
+=======
+    end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
+    while time.ticks_diff(end_time, time.ticks_ms()) > 0:
+        pass
+>>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
 def SpinLeft(duration):
     set_servo_speed_left(0)
     set_servo_speed_right(right_velocity)
+<<<<<<< Updated upstream
     end_time = time.time_ns() + (duration * 1000000000)
     while True:
         if time.time_ns() > end_time:
             break
+=======
+    end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
+    while time.ticks_diff(end_time, time.ticks_ms()) > 0:
+        pass
+>>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
 def SpinRight(duration):
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(0)
+<<<<<<< Updated upstream
     end_time = time.time_ns() + (duration * 1000000000)
     while True:
         if time.time_ns() > end_time:
             break
+=======
+    end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
+    while time.ticks_diff(end_time, time.ticks_ms()) > 0:
+        pass
+>>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
-def SpinTop():
+def SpinTop(speed, duration):
+    distance_sensor.start()
+    ldr_readings = []
+    distance_readings = []
+    angles = []
+    
     duty_cycles = [2000, 3000, 4000, 5000, 6000, 7000, 8000]
     for duty in duty_cycles:
         PanMotor.duty_u16(duty)
-        time.sleep(0.1)
-        print("LDR Value:", ldr.read_u16())
-        time.sleep(0.1)
+        end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
+        while time.ticks_diff(end_time, time.ticks_ms()) > 0:
+            pass
+        ldr_readings.append(ldr.read_u16())
+        distance_readings.append(distance_sensor.read())
 
     PanMotor.duty_u16(5000)
-    print("LDR Value:", ldr.read_u16())
-    time.sleep(1)
+    distance_sensor.stop()
+    return ldr_readings, distance_readings, angles
 
 def MoveForwardCont():
     print("MoveForwardCont called")
@@ -154,8 +223,8 @@ def reboot():
     machine.reset()
 
 def calculate_intersection_points(coord1, coord2, radius):
-    """Calculate the intersection points of two circles."""
-    d = math.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
+    """Calculate the intersection points of two bots given their positions and direction vectors."""
+    d = math.sqrt((coord2[0] - coord1[0]) ** 2 + (coord2[1] - coord1[1]) ** 2)
     
     # No intersection if distance is greater than 2 times the radius or zero
     if d > 2 * radius or d == 0:
@@ -177,11 +246,8 @@ def calculate_intersection_points(coord1, coord2, radius):
     midpoint_y = (y3 + y4) / 2
     return (midpoint_x, midpoint_y)
 
-
-def check_intersections(current_position, radius):
-    '''
-    get the points of intersection of the radius 
-    '''
+def check_intersections(current_position, current_vector, radius):
+    """Get the points of intersection with other bots."""
     global robot_data
     global client_id
     intersections = []
@@ -189,6 +255,7 @@ def check_intersections(current_position, radius):
         if robot_id == client_id:
             continue
         other_position = info['position']
+        other_vector = info['vector']
         points = calculate_intersection_points(current_position, other_position, radius)
         if points:
             intersections.append(points)
@@ -197,111 +264,148 @@ def check_intersections(current_position, radius):
 def check_border_intersection(current_position, radius, width, height):
     """Check if a circle intersects with the borders of the image."""
     x, y = current_position
-    radius = radius
     intersections = []
     
     # Check intersection with the left border (x = 0)
-    if x - radius < 20:
+    if x - radius < border_buffer:
         intersections.append((0, y))
     
     # Check intersection with the right border (x = width)
-    if x + radius > width - 20:
+    if x + radius > width - border_buffer:
         intersections.append((width, y))
     
     # Check intersection with the top border (y = 0)
-    if y - radius < 20:
+    if y - radius < border_buffer:
         intersections.append((x, 0))
     
     # Check intersection with the bottom border (y = height)
-    if y + radius > height - 20:
+    if y + radius > height - border_buffer:
         intersections.append((x, height))
     
     return intersections
 
 
-def avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, width, height):
-    global robot_data  
-    
-    print("Avoiding")
-    
-    if border_intersections:
-        for border in border_intersections:
-            border_angle = calculate_relative_angle(current_position, current_angle, border)
-            if 0 <= border_angle <= 90:
-                SpinLeft(0.3)
-                return
-            elif 90 < border_angle < 270: 
-                MoveForward(0.3)
-                return
-            elif 270 <= border_angle <= 360:
-                SpinRight(0.3) 
-                return
-    
-    # Handle intersections
-    for point in intersections:
-        angle = calculate_relative_angle(current_position, current_angle, point)
-        print(angle)
-        if 0 < angle <= 90:
-            print("avoid to the left")
-            SpinLeft(0.3)
-            return
-        elif 90 < angle <= 270:
-            #vooruit
-            print("avoid forward")
-            MoveForward(0.3)
-            return
-        elif 270 < angle <= 360:
-            print("avoid to the right")
-            SpinRight(0.3)
-            return
-    
-    print("No collisions found?")
+def normalize_vector(vector):
+    norm = math.sqrt(vector[0]**2 + vector[1]**2)
+    if norm == 0:
+        return vector  # Return the original vector if its norm is 0 (to avoid division by zero)
+    return (vector[0] / norm, vector[1] / norm)
 
-def calculate_relative_angle(current_position, current_angle, point):
-    """Calculate the relative angle from the robot's perspective to a point."""
-    dx = point[0] - current_position[0]
-    dy = point[1] - current_position[1]
-    angle_to_point = math.atan2(dy, dx) * 180 / math.pi  # Convert radians to degrees
-    
-    # Normalize the angle to the range [0, 360]
-    relative_angle = (angle_to_point - current_angle) % 360
-    return relative_angle
+def avoid_collisions(current_position, normalized_vector, intersections, border_intersections):
+     """Adjust movements to avoid collisions."""
+     def cross_product(v1, v2):
+         return v1[0] * v2[1] - v1[1] * v2[0]
+   
+     def dot_product(v1, v2):
+         return v1[0] * v2[0] + v1[1] * v2[1]
+     # Process intersections with other bots
+     for point in intersections:
+         vector_to_point = (point[0] - current_position[0], point[1] - current_position[1])
+         normalized_vector_to_point = normalize_vector(vector_to_point)
+       
+         dot = dot_product(normalized_vector, normalized_vector_to_point)
+        
+         if dot < 0:
+             print("Collision behind, move forward")
+             MoveForward(0.1)
+             return
+         else:
+             print("Collision in front, avoid to the side")
+             # Decide to spin left or right based on cross product sign
+             cross = cross_product(normalized_vector, normalized_vector_to_point)
+             if cross > 0:
+                 print("Avoid to the left")
+                 SpinLeft(0.3)
+             else:
+                 print("Avoid to the right")
+                 SpinRight(0.3)
+             return
+   
+     # Process intersections with borders
+     for border in border_intersections:
+         vector_to_border = (border[0] - current_position[0], border[1] - current_position[1])
+         normalized_vector_to_border = normalize_vector(vector_to_border)
+       
+         dot = dot_product(normalized_vector, normalized_vector_to_border)
+       
+         if dot < 0:
+             print("Border behind, move forward")
+             MoveForward(0.1)
+             return
+         else:
+             print("Border in front, avoid to the side")
+             # Decide to spin left or right based on cross product sign
+             cross = cross_product(normalized_vector, normalized_vector_to_border)
+             if cross > 0:
+                 print("Spin to the left to avoid border")
+                 SpinLeft(0.3)
+             else:
+                 print("Spin to the right to avoid border")
+                 SpinRight(0.3)
+             return
+
+     print("No collisions detected")
 
 def pathing_light():
-    # radius for colission
-    # visual wall for colision
-    # check colision
-    # if collission move away
-    # scan ldr&distance
-    # if not high enough, random while avoiding collision
-    # if high enough: highest value
-    # ga naar highest value
-    # value ldr hoog genoeg, distance laag genoeg: trigger iets
-
     global robot_data
     global client_id
+    global last_spin_time
     
     try:
         current_position = robot_data[client_id]['position']
-        current_angle = robot_data[client_id]['angle']
+        current_vector = robot_data[client_id]['vector']
     except KeyError:
         print(f"No key with that name: {client_id}")
         return
-    intersections = check_intersections(current_position, radius)
-    border_intersections = check_border_intersection(current_position, radius, 1280, 720)
-    # check available directions and steer in one of them 
-    if intersections or border_intersections:
-        avoid_collisions(current_position, current_angle, intersections, border_intersections, radius, 1200, 600)
-    else:
-        MoveForwardCont()
-        #SpinTop()
-        #highest_light_index = ldr_readings.index(max(ldr_readings))
 
+    intersections = check_intersections(current_position, current_vector, radius)
+    border_intersections = check_border_intersection(current_position, radius, 1280, 720)
+    
+    if intersections or border_intersections:
+        avoid_collisions(current_position, current_vector, intersections, border_intersections)
+    else:
+        current_time = robot.getTime()
+        if current_time - last_spin_time >= 5:
+            ldr_readings, distance_readings, angles = SpinTop(10, 0.1)
+            highest_ldr_value = max(ldr_readings)
+            highest_ldr_index = ldr_readings.index(highest_ldr_value)
+            highest_ldr_angle = angles[highest_ldr_index]
+            print(highest_ldr_value)
+            if highest_ldr_value > ldr_max_threshold:
+                print("Found it!")
+                Stop()   
+            elif highest_ldr_value >= ldr_min_threshold:
+                steer_to_angle(highest_ldr_angle)  
+                last_spin_time = current_time
+            else:
+                print(f"LDR values to low ({ldr_min_threshold})")
+                MoveForward(1)
+        else:
+        MoveForwardCont()
+            
+def steer_to_angle(target_angle):
+    if target_angle < 0:
+        target_angle += 180
+    elif target_angle > 180:
+        target_angle -= 180
+    
+
+    if target_angle > 90:
+        SpinRight((180 - target_angle) / 90)  
+    else:
+        SpinLeft(target_angle / 90) 
+    
+    MoveForward(1)
+    
 # MQTT callbacks
 def on_message(topic, msg):
     print("I love cheese")
     global topics
     global robot_data
+<<<<<<< Updated upstream
+=======
+    global pos_updated
+>>>>>>> Stashed changes
     topic = topic.decode('utf-8')
     message = msg.decode('utf-8')
 
@@ -326,23 +430,28 @@ def on_message(topic, msg):
                 if robot_id != client_id:
                     if robot_id in robot_data:
                         robot_data[robot_id]['position'] = robot_info['position']
-                        robot_data[robot_id]['angle'] = robot_info['angle']
+                        robot_data[robot_id]['vector'] = robot_info['vector']
                     else:
-                        robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
-                    print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
+                        robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
+                   # print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
                 else:
-                    print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
-                    robot_data[robot_id] = {'position': robot_info['position'], 'angle': robot_info['angle']}
+                   # print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
+                    robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
             
             print("Updated robot data:", robot_data)
+<<<<<<< Updated upstream
             pathing_light()
             client.publish(topics['send'], b"request_positions")
+=======
+            pos_updated = True
+>>>>>>> Stashed changes
         except ValueError:
             # If message is not valid JSON, it is assumed to be a command
             print(f"Received command: {message} on {topic}")
             handle_command(message)
         
 def handle_command(command):
+    global started
     command = command.strip().upper()
     print(command)
     if command == "FRONT_LED_ON":
@@ -360,11 +469,16 @@ def handle_command(command):
     elif command == "MOVE_BACK":
         MoveBack(1)
     elif command == "SPIN_LEFT":
-        SpinLeft(1)
+        SpinLeft(0.3)
     elif command == "SPIN_RIGHT":
-        SpinRight(1)
+        SpinRight(0.3)
     elif command == "SPIN_TOP":
         SpinTop(10.0, 1)
+<<<<<<< Updated upstream
+=======
+    elif command == "START":
+        started = True
+>>>>>>> Stashed changes
     elif command == "STOP":
         Stop()
     elif command == "REBOOT":
@@ -374,6 +488,7 @@ def handle_command(command):
 
 # Connect to MQTT broker and start listening for commands
 def connect_mqtt():
+    global client
     try:
         client.set_callback(on_message)
         client.connect()
@@ -390,23 +505,13 @@ def connect_mqtt():
             fled.value(False)
             time.sleep(0.2)
 
-# MQTT client loop
-def run_mqtt():
-    global client
-    connect_mqtt()
-    while True:
-        try:
-            client.check_msg()  # Check for new messages
-        except OSError as e:
-            print(f"Error in MQTT loop: {e}")
-            time.sleep(2)  # Wait before retrying
-            connect_mqtt()
-        time.sleep(0.01)
 
+#==============================SETUP============================
+Stop()
 #==============================WIFI=============================
 # Activate the Pico LAN
-ssid = 'ssid'
-password = 'pass'
+ssid = 'maters wtnf3'
+password = 'troepopruimen'
 
 network.hostname(client_id)
 wlan = network.WLAN(network.STA_IF)
@@ -429,6 +534,43 @@ while True:
 
 sta_if = network.WLAN(network.STA_IF)
 print(sta_if.ifconfig()[0])  # Print the IP on the serial
+last_update = time.ticks_ms()
 
+
+
+connect_mqtt()
+# Setup MQTT
+
+#==============================Main loop========================
+while True:
+    try:
+        client.check_msg()  # Check for new messages
+        
+        # Check if it's time to send an update
+        if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started:
+            client.publish(topics['send'], b"request_positions")
+            last_update = time.ticks_ms()  # Update the last update time
+        
+        if pos_updated:
+            time_start = time.ticks_ms()
+            pathing_light()
+            pos_updated = False
+            print(time.ticks_diff(time.ticks_ms(), time_start))
+    except OSError as e:
+        print(f"Error in MQTT loop: {e}")
+        time.sleep(2)  # Wait before retrying
+        connect_mqtt()
+        time.sleep(0.01)
+    except Exception as e:
+       print(e)
+    time.sleep(0.01)
+
+<<<<<<< Updated upstream
 # Listen for MQTT commands
 run_mqtt()
+=======
+
+
+
+
+>>>>>>> Stashed changes
