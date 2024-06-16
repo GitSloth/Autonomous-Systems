@@ -70,6 +70,9 @@ min_speed = 0.001
 max_speed = 0.1
 
 notfinished = True
+target_position = None
+
+target_tolerance = 100
 
 # Movement functions
 def MoveForward(duration):
@@ -253,10 +256,10 @@ def avoid_collisions(current_position, normalized_vector, intersections, border_
             # Decide to spin left or right based on cross product sign
             cross_product = np.cross(normalized_vector, normalized_vector_to_point)
             if cross_product > 0:
-                print("Avoid to the left")
+                #print("Avoid to the left")
                 SpinLeft(0.3)
             else:
-                print("Avoid to the right")
+                #print("Avoid to the right")
                 SpinRight(0.3)
             return
     
@@ -290,7 +293,8 @@ def pathing_light():
     global client_id
     global last_spin_time
     global notfinished
-    
+    global target_position  # New global to hold target position
+
     try:
         current_position = robot_data[client_id]['position']
         current_vector = robot_data[client_id]['vector']
@@ -298,9 +302,17 @@ def pathing_light():
         print(f"No key with that name: {client_id}")
         return
 
+
+    if target_position:  # If a target position is set, move towards it
+        if not move_to_position(current_position, current_vector, target_position, target_tolerance):
+            notfinished = False
+            Stop()
+            print(f"Arrived at target position: {target_position}")
+        return
+        
     intersections = check_intersections(current_position, current_vector, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
-    
+
     if intersections or border_intersections:
         avoid_collisions(current_position, current_vector, intersections, border_intersections)
     else:
@@ -316,40 +328,71 @@ def pathing_light():
                 notfinished = False
                 client.publish(topics['send'], f"foundit {current_position}")
                 Stop()   
-                print("currentposition! {current_position}")
+                print(f"Current position: {current_position}")
             elif highest_ldr_value >= ldr_min_threshold:
-                steer_to_angle(highest_ldr_angle)  
+                steer_to_angle(highest_ldr_angle)
                 last_spin_time = current_time
             else:
-                print(f"LDR values to low ({ldr_min_threshold})")
+                #print(f"LDR values too low ({ldr_min_threshold})")
                 MoveForward(1)
         else:
             MoveForward(1)
-            
-def steer_to_angle(target_angle):
-    if target_angle < 0:
-        target_angle += 180
-    elif target_angle > 180:
-        target_angle -= 180
-    
 
-    if target_angle > 90:
-        SpinRight((180 - target_angle) / 90)  
+def steer_to_vector(current_vector, target_vector):
+    current_vector = normalize_vector(current_vector)
+    target_vector = normalize_vector(target_vector)
+
+    dot_product = np.dot(current_vector, target_vector)
+    angle_diff = math.degrees(math.acos(dot_product))
+
+    cross_product = np.cross(current_vector, target_vector)
+
+    if cross_product > 0:
+        direction = -1  # Left
     else:
-        SpinLeft(target_angle / 90) 
-    
-    MoveForward(1)   
-        
+        direction = 1  # Right
 
+    turn_rate = angle_diff / 180
+    if direction > 0:
+        SpinLeft(turn_rate)
+    else:
+        SpinRight(turn_rate)
+    
+    MoveForward(1)
+
+def move_to_position(current_position, current_vector, target_position, tolerance):
+    target_x, target_y = target_position
+    current_x, current_y = current_position
+
+    distance_x = abs(target_x - current_x)
+    distance_y = abs(target_y - current_y)
+    
+    if distance_x <= tolerance and distance_y <= tolerance:
+        return False   
+    target_vector = (target_x - current_x, target_y - current_y)
+    steer_to_vector(current_vector, target_vector)
+    MoveForward(1)
+    return True  
+
+    
+def steer_to_angle(target_angle):
+    target_angle %= 360  # Normalize the target angle to 0-359 degrees
+
+    if target_angle > 180:
+        SpinRight((360 - target_angle) / 180)
+    else:
+        SpinLeft(target_angle / 180)
+        
 def on_message(client, userdata, msg):
     global topics
     global robot_data
     global client_id
     global notfinished
+    global target_position  # New global to hold target position
 
     topic = msg.topic
     message = msg.payload.decode()
-    
+
     if topic == f"robots/{client_id}/config":
         print("Received configuration response.")
         config = message.split(',')
@@ -357,12 +400,12 @@ def on_message(client, userdata, msg):
             topics['receive'] = config[0]
             topics['send'] = config[1]
             client.subscribe(topics['receive'])
-            print(f"Subscribed to {topics['receive']}")
+            #print(f"Subscribed to {topics['receive']}")
             client.publish(topics['send'], f"{client_id} connected successfully")
-            print(f"Published '{client_id} connected successfully' to {topics['send']}")
+            #print(f"Published '{client_id} connected successfully' to {topics['send']}")
         else:
             print("Invalid configuration format received.")
-    
+
     elif topic == topics['receive']:
         print("Received message on the receive topic.")
         if message.startswith('foundit'):
@@ -372,6 +415,8 @@ def on_message(client, userdata, msg):
                 x = int(x_str.strip())
                 y = int(y_str.strip())
                 print(f"Received coordinates: x={x}, y={y}")
+                target_position = (x, y)  # Set the target position for the robot
+                #notfinished = True  # Ensure pathing_light continues to run
             except ValueError:
                 print("Error: Unable to parse coordinates from the received message.")
         else:
@@ -387,18 +432,17 @@ def on_message(client, userdata, msg):
                     else:
                         robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
                 
-                print("Updated robot data:", robot_data)
+                #print("Updated robot data:", robot_data)
                 if notfinished:
                     pathing_light()
                     client.publish(topics['send'], f"request_positions")
             except json.JSONDecodeError:
                 print(f"Received command: {message} on {topic}")
                 handle_command(message)
-    
     else:
         print(f"Received message on unknown topic {topic}: {message}")
         handle_command(message)
-
+        
 def handle_command(command):
     print("Received command:", command)
     command = command.strip().upper()

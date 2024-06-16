@@ -7,7 +7,7 @@ maximizedDockId: -1
 centralWidgetVisible: 1
 projectionMode: PERSPECTIVE
 orthographicViewHeight: 2.52211
-textFiles: 1 "controllers/vector_controller/vector_controller.py" "controllers/Camera/Camera.py"
+textFiles: 0 "controllers/vector_controller/vector_controller.py" "controllers/Camera/Camera.py"
 globalOptionalRendering: CameraFrustums::LightSensorRays::DistanceSensorRays::RangeFinderFrustums
 consoles: Console:All:All
 renderingDevicePerspectives: Charriot(1):range-finder;1;0.5;0;0
