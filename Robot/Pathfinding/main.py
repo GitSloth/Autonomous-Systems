@@ -19,17 +19,15 @@ sda_pin = Pin(0) # SDA pin
 scl_pin = Pin(1) # SCL pin
 
 # Sensors
+# ldr
 ldr = ADC(Pin(LDR_PIN))
 ldr_readings = []
+last_spin_time = 0
+ldr_min_threshold = 280   
+ldr_max_threshold = 900  
+
+# distance sensor
 distance_readings = []
-<<<<<<< Updated upstream
-radius = 120
-robot_data = {}
-=======
->>>>>>> Stashed changes
-
-
-# Initialize the I2C bus
 i2c = I2C(0, sda=sda_pin, scl=scl_pin, freq=400000)
 devices = i2c.scan()
 print("I2C devices found:", devices)
@@ -47,10 +45,7 @@ built_in_led.value(False)
 time.sleep(1)
 fled.value(False)
 bled.value(False)
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 # Set up servos
 LeftMotor = PWM(Pin(PWM_LM))
 LeftMotor.freq(50)
@@ -61,12 +56,8 @@ PanMotor.freq(50)
 stop_duty = 4915
 duty_range = 1638
 
-<<<<<<< Updated upstream
-left_velocity = 20
-=======
 # Speed
 left_velocity = 25
->>>>>>> Stashed changes
 right_velocity = 30
 
 # mqtt settings
@@ -75,11 +66,7 @@ port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 client = MQTTClient(client_id, broker, port)
 topic_register = "swarm/register"
-<<<<<<< Updated upstream
-topics = {}  # Ensure topics is an empty dictionary initially
-=======
 topics = {}
->>>>>>> Stashed changes
 counter = 0
 subscribed_topics = set()
 update_interval = 50  # Update interval in milliseconds
@@ -127,16 +114,9 @@ def MoveForward(duration):
     print("MoveForward called with duration:", duration)
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(right_velocity)
-<<<<<<< Updated upstream
-    end_time = time.time_ns() + (duration * 1000000000)
-    while True:
-        if time.time_ns() > end_time:
-            break
-=======
     end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
     while time.ticks_diff(end_time, time.ticks_ms()) > 0:
         pass
->>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
@@ -144,52 +124,44 @@ def MoveBack(duration):
     print("MoveBack called with duration:", duration)
     set_servo_speed_left(-left_velocity)
     set_servo_speed_right(-right_velocity)
-<<<<<<< Updated upstream
-    end_time = time.time_ns() + (duration * 1000000000)
-    while True:
-        if time.time_ns() > end_time:
-            break
-=======
     end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
     while time.ticks_diff(end_time, time.ticks_ms()) > 0:
         pass
->>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
 def SpinLeft(duration):
     set_servo_speed_left(0)
     set_servo_speed_right(right_velocity)
-<<<<<<< Updated upstream
-    end_time = time.time_ns() + (duration * 1000000000)
-    while True:
-        if time.time_ns() > end_time:
-            break
-=======
     end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
     while time.ticks_diff(end_time, time.ticks_ms()) > 0:
         pass
->>>>>>> Stashed changes
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
 def SpinRight(duration):
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(0)
-<<<<<<< Updated upstream
-    end_time = time.time_ns() + (duration * 1000000000)
-    while True:
-        if time.time_ns() > end_time:
-            break
-=======
     end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
     while time.ticks_diff(end_time, time.ticks_ms()) > 0:
         pass
->>>>>>> Stashed changes
+    set_servo_speed_left(0)
+    set_servo_speed_right(0)
+
+
+
+def MoveForwardCont():
+    print("MoveForwardCont called")
+    set_servo_speed_left(left_velocity)
+    set_servo_speed_right(right_velocity)
+
+def Stop():
+    print("Stop")
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
 def SpinTop(speed, duration):
+    Stop()
     distance_sensor.start()
     ldr_readings = []
     distance_readings = []
@@ -208,16 +180,6 @@ def SpinTop(speed, duration):
     distance_sensor.stop()
     return ldr_readings, distance_readings, angles
 
-def MoveForwardCont():
-    print("MoveForwardCont called")
-    set_servo_speed_left(left_velocity)
-    set_servo_speed_right(right_velocity)
-
-def Stop():
-    print("Stop")
-    set_servo_speed_left(0)
-    set_servo_speed_right(0)
-    
 def reboot():
     print('Rebooting...')
     machine.reset()
@@ -379,9 +341,8 @@ def pathing_light():
                 last_spin_time = current_time
             else:
                 print(f"LDR values to low ({ldr_min_threshold})")
-                MoveForward(1)
         else:
-        MoveForwardCont()
+            MoveForwardCont()
             
 def steer_to_angle(target_angle):
     if target_angle < 0:
@@ -395,17 +356,14 @@ def steer_to_angle(target_angle):
     else:
         SpinLeft(target_angle / 90) 
     
-    MoveForward(1)
+    MoveForward(0.3)
     
 # MQTT callbacks
 def on_message(topic, msg):
     print("I love cheese")
     global topics
     global robot_data
-<<<<<<< Updated upstream
-=======
     global pos_updated
->>>>>>> Stashed changes
     topic = topic.decode('utf-8')
     message = msg.decode('utf-8')
 
@@ -427,7 +385,7 @@ def on_message(topic, msg):
             data = json.loads(message)
             # If message is valid JSON, it is assumed to contain position data
             for robot_id, robot_info in data.items():
-                if robot_id != client_id:
+                if robot_id != client_id:   
                     if robot_id in robot_data:
                         robot_data[robot_id]['position'] = robot_info['position']
                         robot_data[robot_id]['vector'] = robot_info['vector']
@@ -436,15 +394,10 @@ def on_message(topic, msg):
                    # print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
                 else:
                    # print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
-                    robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
+                    robot_data[robot_id] = {'possition': robot_info['position'], 'vector': robot_info['vector']}
             
             print("Updated robot data:", robot_data)
-<<<<<<< Updated upstream
-            pathing_light()
-            client.publish(topics['send'], b"request_positions")
-=======
             pos_updated = True
->>>>>>> Stashed changes
         except ValueError:
             # If message is not valid JSON, it is assumed to be a command
             print(f"Received command: {message} on {topic}")
@@ -474,11 +427,8 @@ def handle_command(command):
         SpinRight(0.3)
     elif command == "SPIN_TOP":
         SpinTop(10.0, 1)
-<<<<<<< Updated upstream
-=======
     elif command == "START":
         started = True
->>>>>>> Stashed changes
     elif command == "STOP":
         Stop()
     elif command == "REBOOT":
@@ -545,17 +495,18 @@ connect_mqtt()
 while True:
     try:
         client.check_msg()  # Check for new messages
-        
+        ldr_readings, distance_readings, angles = SpinTop(10, 0.5)
+        print(f"ldr:{ldr_readings} \n distance: {distance_readings} \n angles: {angles}")
         # Check if it's time to send an update
-        if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started:
-            client.publish(topics['send'], b"request_positions")
-            last_update = time.ticks_ms()  # Update the last update time
-        
-        if pos_updated:
-            time_start = time.ticks_ms()
-            pathing_light()
-            pos_updated = False
-            print(time.ticks_diff(time.ticks_ms(), time_start))
+        #if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started:
+        #    client.publish(topics['send'], b"request_positions")
+        #    last_update = time.ticks_ms()  # Update the last update time
+        #
+        #if pos_updated:
+        #    time_start = time.ticks_ms()
+        #    pathing_light()
+        #    pos_updated = False
+        #    print(time.ticks_diff(time.ticks_ms(), time_start))
     except OSError as e:
         print(f"Error in MQTT loop: {e}")
         time.sleep(2)  # Wait before retrying
@@ -565,12 +516,7 @@ while True:
        print(e)
     time.sleep(0.01)
 
-<<<<<<< Updated upstream
-# Listen for MQTT commands
-run_mqtt()
-=======
 
 
 
 
->>>>>>> Stashed changes
