@@ -55,24 +55,10 @@ topic_register = "swarm/register"
 client = None
 topics = {}
 
- 
-epsilon = 100   
-sigma = 50   
-cutoff_distance = 5 * sigma  
-
- 
-position = [0.0, 0.0]   
-base_speed = 0.05   
-orientation = 0.0   
-
- 
-min_speed = 0.001
-max_speed = 0.1
-
 notfinished = True
 target_position = None
 
-target_tolerance = 100
+target_tolerance = 150
 
 # Movement functions
 def MoveForward(duration):
@@ -303,18 +289,19 @@ def pathing_light():
         return
 
 
-    if target_position:  # If a target position is set, move towards it
-        if not move_to_position(current_position, current_vector, target_position, target_tolerance):
-            notfinished = False
-            Stop()
-            print(f"Arrived at target position: {target_position}")
-        return
+
         
     intersections = check_intersections(current_position, current_vector, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
 
     if intersections or border_intersections:
         avoid_collisions(current_position, current_vector, intersections, border_intersections)
+    elif target_position:  # If a target position is set, move towards it
+        if not move_to_position(current_position, current_vector, target_position, target_tolerance):
+            notfinished = False
+            Stop()
+            print(f"Arrived at target position: {target_position}")
+        return
     else:
         current_time = robot.getTime()
         if current_time - last_spin_time >= 5:
