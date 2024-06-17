@@ -471,8 +471,8 @@ def connect_mqtt():
 Stop()
 #==============================WIFI=============================
 # Activate the Pico LAN
-ssid = 'maters wtnf3'
-password = 'troepopruimen'
+ssid = 'ssid'
+password = 'pass'
 
 network.hostname(client_id)
 wlan = network.WLAN(network.STA_IF)
