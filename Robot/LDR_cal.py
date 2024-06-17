@@ -19,8 +19,8 @@ def map_adc_to_light_level(adc_value, min_adc, max_adc):
 
 # Calibration function
 def calibrate_ldr(samples=100):
-    min_val = 65535
-    max_val = 0
+    min_val = 0
+    max_val = 65535
     
     print("Calibrating... Please expose the LDR to the brightest and darkest conditions during this time.")
     for i in range(samples):

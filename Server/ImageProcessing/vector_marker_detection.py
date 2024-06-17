@@ -16,7 +16,7 @@ to do:
 """
 
 class MarkerDetector:
-    def __init__(self, camType1=0, cameraSource1=0, enableCam2=True, camType2=0, cameraSource2=0, debug=False):
+    def __init__(self, camType1=0, cameraSource1=0, enableCam2=False, camType2=0, cameraSource2=0, debug=False):
         self.DEBUG = debug
         self.offset = 50
         self.enableCam2 = enableCam2
@@ -164,7 +164,7 @@ class MarkerDetector:
 
 # Example usage:
 if __name__ == "__main__":
-    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=False, cameraSource2=0, camType2=0, debug=True)
+    detector  = MarkerDetector(cameraSource1=0, camType1=0, enableCam2=True, cameraSource2='http://localhost:5005/video_feed', camType2=2, debug=True)
 
     #time.sleep(4)
     # Initialize variables for FPS calculation

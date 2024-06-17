@@ -22,7 +22,7 @@ def start_camera():
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector  = MarkerDetector(cameraSource1=0, camType1=0, enableCam2=False, cameraSource2='http://localhost:5005/video_feed', camType2=2, debug=True)
+    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=True, cameraSource2=0, camType2=0, debug=True)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
@@ -62,6 +62,7 @@ def on_message(client, userdata, msg):
                 client.publish(f"robots/{robots}/receive", positions)
                 client.loop()
                 client.publish(f"robots/{robots}/receive", "START")
+                client.loop()
         elif payload == "positions":
             get_bot_positions(client)
         else:
@@ -74,7 +75,7 @@ def on_message(client, userdata, msg):
                 payload = msg.payload.decode()
                 if payload == "request_positions":
                     positions = get_bot_positions(client)
-                    print(positions)
+                    #print(positions)
                     client.publish(f"robots/{robot_id}/receive", positions)
                     print(f"Sent positions to robots/{robot_id}/receive")
                 elif payload.startswith("foundit"):
@@ -175,7 +176,7 @@ def get_bot_positions(client):
         for bot, marker_id in bots_matched.items():
             if marker_id in marker_id_to_position:
                 bots_position[bot] = marker_id_to_position[marker_id]
-                print("match")
+                #print("match")
 
         bots_position_json = json.dumps(bots_position)
         #print("bot positions:", bots_position_json)

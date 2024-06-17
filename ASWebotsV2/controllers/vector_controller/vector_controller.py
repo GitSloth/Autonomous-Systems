@@ -351,11 +351,13 @@ def move_to_position(current_position, current_vector, target_position, toleranc
     target_x, target_y = target_position
     current_x, current_y = current_position
 
-    distance_x = abs(target_x - current_x)
-    distance_y = abs(target_y - current_y)
+    distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
     
-    if distance_x <= tolerance and distance_y <= tolerance:
-        return False   
+    #distance_x = abs(target_x - current_x)
+    #distance_y = abs(target_y - current_y)
+    
+    if distance <= tolerance:
+        return False  
     target_vector = (target_x - current_x, target_y - current_y)
     steer_to_vector(current_vector, target_vector)
     MoveForward(1)

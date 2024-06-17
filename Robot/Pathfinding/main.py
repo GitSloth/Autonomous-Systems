@@ -7,6 +7,22 @@ import network
 import math
 import json
 
+def read_settings():
+    try:
+        with open("settings.json", "r") as f:
+            settings = json.load(f)
+            print("succesfully import settings")
+        return settings
+    except Exception as e:
+        print("Failed to read settings file:", e)
+        return None
+    
+settings = read_settings()
+if settings is None:
+    print("failed to get settings.")
+    exit()
+
+
 # Pins
 BUILT_IN_LED = 25  # Built-in LED
 FLED = 20  # Front LED Red
@@ -24,8 +40,8 @@ ldr_pin = Pin(LDR_PIN_ID, mode=Pin.IN, value=None,pull=None)
 ldr = ADC(ldr_pin)
 ldr_readings = []
 last_spin_time = 0
-ldr_min_threshold = 3000   
-ldr_max_threshold = 6000  
+ldr_min_threshold = settings["ldr_min"]
+ldr_max_threshold = settings["ldr_max"]  
 
 # distance sensor
 distance_readings = []
@@ -58,11 +74,11 @@ stop_duty = 4915
 duty_range = 1638
 
 # Speed
-left_velocity = 25
-right_velocity = 30
+left_velocity = settings["left_velocity"]
+right_velocity = settings["right_velocity"]
 
 # mqtt settings
-broker = '10.198.64.131' # change ip based on network 
+broker = '145.24.238.235' # change ip based on network 
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 client = MQTTClient(client_id, broker, port)
@@ -75,7 +91,7 @@ update_interval = 50  # Update interval in milliseconds
 notfinished = True
 target_position = None
 
-target_tolerance = 150
+target_tolerance = 60
 
 # positioning
 radius = 80
@@ -83,6 +99,9 @@ border_buffer = 40
 robot_data = {}
 pos_updated = False
 started = False
+# wifi
+ssid = settings["wifi_ssid"]
+password = settings["wifi_password"]
 #=========================MOVES============================
 #set servo speed of the left motor
 #-100 to 100, 0 for stop
@@ -160,14 +179,13 @@ def Stop():
 
 def SpinTop(speed, duration):
     Stop()
-    distance_sensor.start()
     ldr_readings = []
     distance_readings = []
     angles = []
     steps = 10
-    duty_min = 2000  # all the way right
-    duty_mid = 5000  # middle
-    duty_max = 8000  # all the way left
+    duty_min = settings["duty_0"]  # all the way right
+    duty_mid = settings["duty_mid"] # middle
+    duty_max = settings["duty_180"]  # all the way left
     angle_min = 0
     angle_max = 180
     
@@ -180,8 +198,22 @@ def SpinTop(speed, duration):
         end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
         while time.ticks_diff(end_time, time.ticks_ms()) > 0:
             pass
-        ldr_readings.append(ldr.read_u16())
-        distance_readings.append(distance_sensor.read())
+        first_reading = ldr.read_u16()
+        second_reading = ldr.read_u16()
+        difference = abs(first_reading - second_reading)
+        print(f"ldr dif: {difference}")
+        while not (difference < 1000):
+            first_reading = ldr.read_u16()
+            second_reading = ldr.read_u16()
+            difference = abs(first_reading - second_reading)
+            print(f"ldr dif: {difference}")
+        ldr_readings.append(first_reading)
+        try:
+            distance_value = distance_sensor.read()
+        except Exception as e:
+            print(e)
+            distance_value = 999
+        distance_readings.append(distance_value)
         angles.append(angle)
     PanMotor.duty_u16(duty_mid)
     distance_sensor.stop()
@@ -322,7 +354,7 @@ def pathing_light():
     global last_spin_time
     global notfinished
     global target_position  # New global to hold target position
-    
+    global target_tolerance
     try:
         current_position = robot_data[client_id]['position']
         current_vector = robot_data[client_id]['vector']
@@ -332,7 +364,8 @@ def pathing_light():
 
     intersections = check_intersections(current_position, current_vector, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
-    
+    if not notfinished:
+        return
     if intersections or border_intersections:
         avoid_collisions(current_position, current_vector, intersections, border_intersections)
     elif target_position:  # If a target position is set, move towards it
@@ -347,8 +380,11 @@ def pathing_light():
             highest_ldr_value = max(ldr_readings)
             highest_ldr_index = ldr_readings.index(highest_ldr_value)
             highest_ldr_angle = angles[highest_ldr_index]
+            distance = distance_readings[highest_ldr_index]
+            print(distance)
             print(highest_ldr_value)
-            if highest_ldr_value > ldr_max_threshold:
+            if highest_ldr_value > ldr_max_threshold and distance < 130:
+                
                 print("Found it!")
                 notfinished = False
                 client.publish(topics['send'], f"foundit {current_position}")
@@ -358,7 +394,7 @@ def pathing_light():
                 steer_to_angle(highest_ldr_angle)  
             else:
                 print(f"LDR values to low ({ldr_min_threshold})")
-            last_spin_time = time.ticks_add(time.ticks_ms(), int(3000))
+            last_spin_time = time.ticks_add(time.ticks_ms(), int(1000))
             
         else:
             MoveForwardCont()
@@ -388,11 +424,13 @@ def steer_to_vector(current_vector, target_vector):
 def move_to_position(current_position, current_vector, target_position, tolerance):
     target_x, target_y = target_position
     current_x, current_y = current_position
-
-    distance_x = abs(target_x - current_x)
-    distance_y = abs(target_y - current_y)
     
-    if distance_x <= tolerance and distance_y <= tolerance:
+    distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
+    
+    #distance_x = abs(target_x - current_x)
+    #distance_y = abs(target_y - current_y)
+    print(distance)
+    if distance <= tolerance:
         return False   
     target_vector = (target_x - current_x, target_y - current_y)
     steer_to_vector(current_vector, target_vector)
@@ -401,12 +439,13 @@ def move_to_position(current_position, current_vector, target_position, toleranc
 
     
 def steer_to_angle(target_angle):
-    target_angle %= 360  # Normalize the target angle to 0-359 degrees
-
-    if target_angle > 180:
-        SpinRight((360 - target_angle) / 180)
-    else:
-        SpinLeft(target_angle / 180)
+    #target_angle %= 360  # Normalize the target angle to 0-359 degrees
+    print(target_angle)
+    print(target_angle)
+    if 0 <= target_angle <= 90:
+        SpinRight(target_angle / 90)
+    elif 91 <= target_angle <= 180:
+        SpinLeft((target_angle - 90) / 90)
     
 # MQTT callbacks
 def on_message(topic, msg):
@@ -414,6 +453,7 @@ def on_message(topic, msg):
     global topics
     global robot_data
     global pos_updated
+    global target_position
     topic = topic.decode('utf-8')
     message = msg.decode('utf-8')
 
@@ -525,9 +565,6 @@ def connect_mqtt():
 Stop()
 #==============================WIFI=============================
 # Activate the Pico LAN
-ssid = 'ssid'
-password = 'pass'
-
 network.hostname(client_id)
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
@@ -555,34 +592,33 @@ last_update = time.ticks_ms()
 
 connect_mqtt()
 # Setup MQTT
-#distance_sensor.start()
+distance_sensor.start()
 #==============================Main loop========================
 while True:
     try:
         client.check_msg()  # Check for new messages
-        
         #print(f"distance: {distance_sensor.read()}")
         #print(f". :{ldr.read_u16()}")
+        #print("panmotor")
         #PanMotor.duty_u16(5000)
-        #ldr_readings, distance_readings, angles = SpinTop(1, 0.2)
-        #print(ldr_readings)
-        #print(distance_readings)
-        #print(angles)
         # Check if it's time to send an update
-        if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started:
+        if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started and notfinished:
             client.publish(topics['send'], b"request_positions")
             last_update = time.ticks_ms()  # Update the last update time
         
-        if pos_updated:
+        if pos_updated and notfinished:
             #time_start = time.ticks_ms()
             pathing_light()
             pos_updated = False
             #print(time.ticks_diff(time.ticks_ms(), time_start))
+        if not notfinished:
+            distance_sensor.stop()
     except OSError as e:
         print(f"Error in main loop: {e}")
         time.sleep(2)  # Wait before retrying
-        #connect_mqtt()
+        connect_mqtt()
         time.sleep(0.01)
     except Exception as e:
        print(e)
     time.sleep(0.01)
+

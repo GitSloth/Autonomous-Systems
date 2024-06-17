@@ -10,8 +10,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.47186069371957734 0.43690470589362695 0.7658079156619385 1.9080100790698225
-  position -3.270595254923533 -25.104913714709927 43.85921858089511
+  orientation 0.01613961692681021 0.9989342042820585 -0.04324312986852704 0.7151342606834422
+  position -42.33723789401762 -3.8619395440259434 37.52422046167982
 }
 TexturedBackground {
   texture "dusk"
@@ -234,7 +234,7 @@ DEF Charriot Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3402053572110573 0.2897779657796005
-        rotation 0.7047158244871952 -0.07937443584334111 0.7050356768645714 3.300245552049966
+        rotation 0.704715824487195 -0.07937443584334111 0.7050356768645712 3.300245552049966
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -251,8 +251,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 3.570725080395869e-12 5.429435057838638e-12 4.6600407988657665e-17
-        angularVelocity -2.5059338294682354e-11 3.269605533600153e-11 1.3051217397926242e-11
       }
     }
     DEF wheel2 HingeJoint {
@@ -286,8 +284,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity -5.541600258060697e-12 -1.5394903726730876e-12 -3.2380735689737807e-16
-        angularVelocity 2.2567413032555185e-11 -2.9509191543228516e-11 1.3057293274709863e-11
       }
     }
   ]
@@ -297,8 +293,6 @@ DEF Charriot Robot {
     mass 5
   }
   controller "vector_controller"
-  linearVelocity 5.530338992654305e-12 -6.537222129183167e-12 4.0888860435741844e-16
-  angularVelocity -2.8107515109531764e-14 -3.808187038442188e-15 1.305449810633967e-11
 }
 DEF Charriot Robot {
   translation 0.3014110077253479 -10.006012700501971 -0.056306798305784014
@@ -469,7 +463,7 @@ DEF Charriot Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.34020535653704 0.28977796515621074
-        rotation 0.7047158852223233 -0.07937335897661396 0.705035737392146 3.3002434127854743
+        rotation 0.7047158852223233 -0.07937335897661409 0.7050357373921459 3.3002434127854743
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -486,8 +480,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 3.7552853709890876e-13 6.484954152209404e-12 -4.632025569117502e-16
-        angularVelocity -3.804982126697922e-11 1.5783539211008734e-11 1.3059326734851417e-11
       }
     }
     DEF wheel2 HingeJoint {
@@ -503,7 +495,7 @@ DEF Charriot Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.34025386790283846 0.2898418813421801
-        rotation -0.6994153667450761 0.1454755508615658 -0.6997535343693341 2.8525719765163977
+        rotation -0.6994153667450761 0.1454755508615659 -0.699753534369334 2.8525719765163977
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -521,8 +513,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity -4.030232733780059e-12 -4.092170123826553e-12 -3.24242275632989e-16
-        angularVelocity 3.4295077540600046e-11 -1.4267391809580677e-11 1.3065321982622175e-11
       }
     }
   ]
@@ -532,8 +522,6 @@ DEF Charriot Robot {
     mass 5
   }
   controller "vector_controller"
-  linearVelocity 8.065273281324278e-12 -2.9143264466611223e-12 1.318767178771637e-15
-  angularVelocity -1.3158969518935131e-14 -1.404436382810823e-14 1.3065645025592643e-11
 }
 DEF Charriot Robot {
   translation 3.4210148722334215 -11.261212433564976 -0.05630679910270753
@@ -704,7 +692,7 @@ DEF Charriot Robot {
       ]
       endPoint Solid {
         translation 0.40998574933038956 0.3402053578671079 0.28977796638637704
-        rotation 0.7047157653700424 -0.07937548400841038 0.705035617949438 3.3002476342964355
+        rotation 0.7047157653700419 -0.07937548400841041 0.7050356179494385 3.3002476342964355
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -721,8 +709,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity 3.753242766239707e-13 6.48318997875393e-12 -3.802843175992973e-16
-        angularVelocity -3.804880774016923e-11 1.5784028792371035e-11 1.3058046200276433e-11
       }
     }
     DEF wheel2 HingeJoint {
@@ -738,7 +724,7 @@ DEF Charriot Robot {
       ]
       endPoint Solid {
         translation -0.4700171891213426 0.3402538688471756 0.2898418828583736
-        rotation -0.6994151447606182 0.14547768466804306 -0.6997533126346092 2.8525677993561143
+        rotation -0.6994151447606182 0.14547768466804303 -0.699753312634609 2.8525677993561143
         children [
           DEF wheel Shape {
             appearance PBRAppearance {
@@ -756,8 +742,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity -4.031972022804082e-12 -4.088911329993503e-12 -3.8853960013445007e-16
-        angularVelocity 3.429400522749044e-11 -1.4269115497744934e-11 1.3064756752800438e-11
       }
     }
   ]
@@ -767,8 +751,6 @@ DEF Charriot Robot {
     mass 5
   }
   controller "vector_controller"
-  linearVelocity 8.068388676901212e-12 -2.916585692837382e-12 1.9790420023859176e-15
-  angularVelocity -2.0591125443551146e-14 -1.470001290063476e-14 1.3061361551213227e-11
 }
 DEF Charriot Robot {
   translation -2.48194041604335 0.45075207213127505 -0.05630661335151016
@@ -956,8 +938,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity -6.449209373923723e-07 5.446421752836558e-07 3.0137594082141455e-07
-        angularVelocity -3.146983215513659e-06 -3.0017256795430096e-06 -2.490295649466956e-07
       }
     }
     DEF wheel2 HingeJoint {
@@ -991,8 +971,6 @@ DEF Charriot Robot {
         boundingObject USE wheel
         physics DEF wheel_physics Physics {
         }
-        linearVelocity -8.172307892714944e-07 8.123419310886494e-07 -2.3733121936647486e-07
-        angularVelocity -3.207003698261906e-06 -3.123865715814118e-06 -2.490526657158342e-07
       }
     }
   ]
@@ -1002,8 +980,6 @@ DEF Charriot Robot {
     mass 5
   }
   controller "vector_controller"
-  linearVelocity -4.5314502403970986e-07 7.833580334954362e-07 -3.585970515889239e-06
-  angularVelocity -3.17950666175603e-06 -3.1224503708788953e-06 -2.479694170654326e-07
 }
 FloorLight {
   translation 0.31 7.51 0
