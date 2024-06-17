@@ -14,17 +14,18 @@ BLED = 21  # Back LED Green
 PWM_LM = 6  # Left Continuous Servo
 PWM_RM = 7  # Right Continuous Servo
 PWM_SC = 10  # Panning Servo
-LDR_PIN = 27 # ldr sensor
+LDR_PIN_ID = 27 # ldr sensor
 sda_pin = Pin(0) # SDA pin
 scl_pin = Pin(1) # SCL pin
 
 # Sensors
 # ldr
-ldr = ADC(Pin(LDR_PIN))
+ldr_pin = Pin(LDR_PIN_ID, mode=Pin.IN, value=None,pull=None)
+ldr = ADC(ldr_pin)
 ldr_readings = []
 last_spin_time = 0
-ldr_min_threshold = 280   
-ldr_max_threshold = 900  
+ldr_min_threshold = 3000   
+ldr_max_threshold = 6000  
 
 # distance sensor
 distance_readings = []
@@ -166,17 +167,26 @@ def SpinTop(speed, duration):
     ldr_readings = []
     distance_readings = []
     angles = []
+    steps = 10
+    duty_min = 2000  # all the way right
+    duty_mid = 5000  # middle
+    duty_max = 8000  # all the way left
+    angle_min = 0
+    angle_max = 180
     
-    duty_cycles = [2000, 3000, 4000, 5000, 6000, 7000, 8000]
-    for duty in duty_cycles:
+    step_size = (duty_max - duty_min) // (steps-1)
+    #duty_cycles = [2000, 3000, 4000, 5000, 6000, 7000, 8000]
+    for i in range(steps):
+        duty = duty_min + step_size * i
+        angle = angle_min + (angle_max - angle_min) * (duty - duty_min) / (duty_max - duty_min)
         PanMotor.duty_u16(duty)
         end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
         while time.ticks_diff(end_time, time.ticks_ms()) > 0:
             pass
         ldr_readings.append(ldr.read_u16())
         distance_readings.append(distance_sensor.read())
-
-    PanMotor.duty_u16(5000)
+        angles.append(angle)
+    PanMotor.duty_u16(duty_mid)
     distance_sensor.stop()
     return ldr_readings, distance_readings, angles
 
@@ -326,8 +336,7 @@ def pathing_light():
     if intersections or border_intersections:
         avoid_collisions(current_position, current_vector, intersections, border_intersections)
     else:
-        current_time = robot.getTime()
-        if current_time - last_spin_time >= 5:
+        if time.ticks_diff(last_spin_time, time.ticks_ms()) < 0:
             ldr_readings, distance_readings, angles = SpinTop(10, 0.1)
             highest_ldr_value = max(ldr_readings)
             highest_ldr_index = ldr_readings.index(highest_ldr_value)
@@ -338,11 +347,13 @@ def pathing_light():
                 Stop()   
             elif highest_ldr_value >= ldr_min_threshold:
                 steer_to_angle(highest_ldr_angle)  
-                last_spin_time = current_time
             else:
                 print(f"LDR values to low ({ldr_min_threshold})")
+            last_spin_time = time.ticks_add(time.ticks_ms(), int(5000))
+            time.sleep(1)
         else:
             MoveForwardCont()
+        
             
 def steer_to_angle(target_angle):
     if target_angle < 0:
@@ -394,7 +405,7 @@ def on_message(topic, msg):
                    # print(f"Updated robot '{robot_id}' position: {robot_data[robot_id]['position']}, angle: {robot_data[robot_id]['angle']}")
                 else:
                    # print(f"Current robot: {client_id} position: {robot_info['position']}, angle: {robot_info['angle']}")
-                    robot_data[robot_id] = {'possition': robot_info['position'], 'vector': robot_info['vector']}
+                    robot_data[robot_id] = {'position': robot_info['position'], 'vector': robot_info['vector']}
             
             print("Updated robot data:", robot_data)
             pos_updated = True
@@ -490,31 +501,38 @@ last_update = time.ticks_ms()
 
 connect_mqtt()
 # Setup MQTT
-
+#distance_sensor.start()
 #==============================Main loop========================
 while True:
     try:
         client.check_msg()  # Check for new messages
-        ldr_readings, distance_readings, angles = SpinTop(10, 0.5)
-        print(f"ldr:{ldr_readings} \n distance: {distance_readings} \n angles: {angles}")
+        
+        #print(f"distance: {distance_sensor.read()}")
+        #print(f". :{ldr.read_u16()}")
+        #PanMotor.duty_u16(5000)
+        #ldr_readings, distance_readings, angles = SpinTop(1, 0.2)
+        #print(ldr_readings)
+        #print(distance_readings)
+        #print(angles)
         # Check if it's time to send an update
-        #if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started:
-        #    client.publish(topics['send'], b"request_positions")
-        #    last_update = time.ticks_ms()  # Update the last update time
-        #
-        #if pos_updated:
-        #    time_start = time.ticks_ms()
-        #    pathing_light()
-        #    pos_updated = False
-        #    print(time.ticks_diff(time.ticks_ms(), time_start))
+        if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started:
+            client.publish(topics['send'], b"request_positions")
+            last_update = time.ticks_ms()  # Update the last update time
+        
+        if pos_updated:
+            #time_start = time.ticks_ms()
+            pathing_light()
+            pos_updated = False
+            #print(time.ticks_diff(time.ticks_ms(), time_start))
     except OSError as e:
-        print(f"Error in MQTT loop: {e}")
+        print(f"Error in main loop: {e}")
         time.sleep(2)  # Wait before retrying
-        connect_mqtt()
+        #connect_mqtt()
         time.sleep(0.01)
     except Exception as e:
        print(e)
     time.sleep(0.01)
+
 
 
 
