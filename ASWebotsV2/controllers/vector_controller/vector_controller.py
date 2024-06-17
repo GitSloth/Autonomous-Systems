@@ -154,7 +154,7 @@ def process_range_image(image):
             min_distance = distance
     return min_distance
     
-def calculate_intersection_points(coord1, vector1, coord2, vector2, radius):
+def calculate_intersection_points(coord1, coord2, radius):
     """Calculate the intersection points of two bots given their positions and direction vectors."""
     d = np.linalg.norm(np.array(coord1) - np.array(coord2))
     
@@ -188,7 +188,7 @@ def check_intersections(current_position, current_vector, radius):
             continue
         other_position = info['position']
         other_vector = info['vector']
-        points = calculate_intersection_points(current_position, current_vector, other_position, other_vector, radius)
+        points = calculate_intersection_points(current_position, other_position, radius)
         if points:
             intersections.append(points)
     return intersections
