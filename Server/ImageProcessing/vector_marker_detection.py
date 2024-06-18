@@ -24,7 +24,6 @@ class MarkerDetector:
         if self.enableCam2:
             self.cam2= Camera(camType2, cameraSource2)
         
-
         # Setup marker detection
         self.detectorParams = aruco.DetectorParameters()
         self.dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_50)
@@ -104,8 +103,7 @@ class MarkerDetector:
                 centerY = int((top_left[1] + bottom_right[1]) / 2.0)
                 
                 if self.DEBUG:
-                    cv2.circle(input1, (centerX, centerY), 5, (0, 255, 0), -1)
-                        
+                    cv2.circle(input1, (centerX, centerY), 5, (0, 255, 0), -1)                        
                 # Calculate the angle of the marker
                 top_mid = ((top_left[0] + top_right[0]) / 2, (top_left[1] + top_right[1]) / 2)
                 bottom_mid = ((bottom_left[0] + bottom_right[0]) / 2, (bottom_left[1] + bottom_right[1]) / 2)
@@ -120,6 +118,8 @@ class MarkerDetector:
                 adjusted_centerY = int(centerY + self.offset * norm_vector[1])
                 
                 cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 5, (0, 255, 255), -1)
+                cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 80, (0, 255, 0), 1)
+
                 
                 newMarkerInfoList.append({
                     'id': int(markerId),

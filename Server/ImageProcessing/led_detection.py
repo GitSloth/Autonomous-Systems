@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from Camera import Camera
+from camera import Camera
 
 # Function to do nothing
 def nothing(x):
@@ -14,7 +14,7 @@ cv2.namedWindow('Settings', cv2.WINDOW_AUTOSIZE)
 cv2.resizeWindow('Settings', 450,550)
 cv2.namedWindow('Output', cv2.WINDOW_AUTOSIZE)
 #cv2.namedWindow('Contours', cv2.WINDOW_AUTOSIZE)
-#cv2.namedWindow('masked', cv2.WINDOW_NORMAL)
+cv2.namedWindow('masked', cv2.WINDOW_NORMAL)
 #cv2.namedWindow('bright', cv2.WINDOW_NORMAL)
 
 # Initial HSV values for green and red
@@ -123,7 +123,7 @@ while(True):
     green_led = None
     red_led = None
     for contour in contours:
-        if cv2.contourArea(contour) < 10:
+        if cv2.contourArea(contour) > 10:
             continue
         x, y, w, h  = cv2.boundingRect(contour)
         roi = hsv_img[y:y+h,x:x+h]
@@ -132,7 +132,7 @@ while(True):
         sub_mask_red_2 = cv2.inRange(roi, lower_hsv_red_2,higher_hsv_red_2)
         mask_red = sub_mask_red_1+sub_mask_red_2
         mask_green = cv2.inRange(roi, lower_hsv_green, higher_hsv_green)
-
+        masked_frame = cv2.bitwise_and(img,img, mask= mask_red)
         if cv2.countNonZero(mask_green) > 0 and green_led is None:
             green_led = (x, y, w, h, 'green')
         # Check if red LED is present
@@ -154,7 +154,7 @@ while(True):
 
     #cv2.imshow('contours', frame_with_contours)
     cv2.imshow('Output', img)
-    #cv2.imshow('masked', masked_frame)
+    cv2.imshow('masked', masked_frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

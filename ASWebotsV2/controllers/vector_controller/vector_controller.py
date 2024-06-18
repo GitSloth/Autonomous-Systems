@@ -22,6 +22,7 @@ ldr = robot.getDevice('light sensor')
 ldr_readings = []
 distance_readings = []
 radius = 80
+reduced_radius = 40
 robot_data = {}
 
 #ldr zooi
@@ -59,6 +60,7 @@ notfinished = True
 target_position = None
 
 target_tolerance = 170
+reduced_avoidance_radius = 300
 
 # Movement functions
 def MoveForward(duration):
@@ -154,29 +156,57 @@ def process_range_image(image):
             min_distance = distance
     return min_distance
     
+# def calculate_intersection_points(coord1, coord2, radius):
+#     """Calculate the intersection points of two bots given their positions and direction vectors."""
+#     d = np.linalg.norm(np.array(coord1) - np.array(coord2))
+    
+#     # No intersection if distance is greater than 2 times the radius or zero
+#     if d > 2 * radius or d == 0:
+#         return None
+    
+#     a = (radius**2 - radius**2 + d**2) / (2 * d)
+#     h = math.sqrt(radius**2 - a**2)
+    
+#     x2 = coord1[0] + a * (coord2[0] - coord1[0]) / d
+#     y2 = coord1[1] + a * (coord2[1] - coord1[1]) / d
+    
+#     x3 = x2 + h * (coord2[1] - coord1[1]) / d
+#     y3 = y2 - h * (coord2[0] - coord1[0]) / d
+    
+#     x4 = x2 - h * (coord2[1] - coord1[1]) / d
+#     y4 = y2 + h * (coord2[0] - coord1[0]) / d
+    
+#     midpoint_x = (x3 + x4) / 2
+#     midpoint_y = (y3 + y4) / 2
+#     return (midpoint_x, midpoint_y)
 def calculate_intersection_points(coord1, coord2, radius):
     """Calculate the intersection points of two bots given their positions and direction vectors."""
-    d = np.linalg.norm(np.array(coord1) - np.array(coord2))
+    coord1 = np.array(coord1)
+    coord2 = np.array(coord2)
+    
+    d = np.linalg.norm(coord1 - coord2)
     
     # No intersection if distance is greater than 2 times the radius or zero
     if d > 2 * radius or d == 0:
         return None
     
-    a = (radius**2 - radius**2 + d**2) / (2 * d)
-    h = math.sqrt(radius**2 - a**2)
+    radius_squared = radius**2
+    a = d / 2
+    h = math.sqrt(radius_squared - a**2)
     
-    x2 = coord1[0] + a * (coord2[0] - coord1[0]) / d
-    y2 = coord1[1] + a * (coord2[1] - coord1[1]) / d
+    midpoint = (coord1 + coord2) / 2
     
-    x3 = x2 + h * (coord2[1] - coord1[1]) / d
-    y3 = y2 - h * (coord2[0] - coord1[0]) / d
+    direction = (coord2 - coord1) / d
     
-    x4 = x2 - h * (coord2[1] - coord1[1]) / d
-    y4 = y2 + h * (coord2[0] - coord1[0]) / d
+    perpendicular = np.array([-direction[1], direction[0]])
     
-    midpoint_x = (x3 + x4) / 2
-    midpoint_y = (y3 + y4) / 2
-    return (midpoint_x, midpoint_y)
+    intersection1 = midpoint + h * perpendicular
+    intersection2 = midpoint - h * perpendicular
+    
+    # Calculating the midpoint
+    intersection_midpoint = (intersection1 + intersection2) / 2
+    
+    return tuple(intersection_midpoint)
 
 def check_intersections(current_position, current_vector, radius):
     """Get the points of intersection with other bots."""
@@ -280,6 +310,7 @@ def pathing_light():
     global last_spin_time
     global notfinished
     global target_position  # New global to hold target position
+    global reduced_avoidance_radius
 
     try:
         current_position = robot_data[client_id]['position']
@@ -287,10 +318,6 @@ def pathing_light():
     except KeyError:
         print(f"No key with that name: {client_id}")
         return
-
-
-
-        
     intersections = check_intersections(current_position, current_vector, radius)
     border_intersections = check_border_intersection(current_position, radius, 1280, 720)
 
@@ -324,6 +351,38 @@ def pathing_light():
                 MoveForward(1)
         else:
             MoveForward(1)
+
+def pathing_target():
+    global robot_data
+    global target_position
+    global reduced_avoidance_radius
+    global client_id
+    global notfinished
+    
+    try:
+        current_position = robot_data[client_id]['position']
+        current_vector = robot_data[client_id]['vector']
+    except KeyError:
+        print(f"No key with that name: {client_id}")
+        return
+     # Calculate distance to target position
+    distance_to_target = None
+    reduction_factor = 1.0
+    if target_position:
+        distance_to_target = math.sqrt(
+            (target_position[0] - current_position[0]) ** 2 +
+            (target_position[1] - current_position[1]) ** 2
+        )
+        if distance_to_target < reduced_avoidance_radius:
+            reduction_factor = distance_to_target / reduced_avoidance_radius
+
+    print(f"Distance to target: {distance_to_target}, Reduction factor: {reduction_factor}")
+    intersections = check_intersections(current_position, current_vector, reduced_radius)
+    border_intersections = check_border_intersection(current_position, reduced_radius, 1280, 720)
+    if intersections or border_intersections:
+        avoid_collisions(current_position, current_vector, intersections, border_intersections)
+    else:
+        MoveForward(0.1)
 
 def steer_to_vector(current_vector, target_vector):
     print("I love chicken")
@@ -360,22 +419,15 @@ def move_to_position(current_position, current_vector, target_position, toleranc
     
     distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
     
-    #distance_x = abs(target_x - current_x)
-    #distance_y = abs(target_y - current_y)
     print(f"distance: {distance}")
     if distance <= tolerance:
         print("withing distance")
         return False  
-    # distance_x = abs(target_x - current_x)
-    # distance_y = abs(target_y - current_y)
-    # print(distance_x)
-    # print(distance_y)
-    # if distance_x <= tolerance and distance_y <= tolerance:
-    #     print("withing distance")
-    #     return False   
+     
     target_vector = (target_x - current_x, target_y - current_y)
     steer_to_vector(current_vector, target_vector)
     return True  
+
 # def steer_to_vector(current_vector, target_vector):
 #     current_vector = normalize_vector(current_vector)
 #     target_vector = normalize_vector(target_vector)

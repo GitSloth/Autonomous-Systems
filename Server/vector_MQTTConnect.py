@@ -22,7 +22,7 @@ def start_camera():
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=True, cameraSource2=0, camType2=0, debug=True)
+    detector  = MarkerDetector(cameraSource1='http://localhost:5005/video_feed', camType1=2, enableCam2=True, cameraSource2=0, camType2=0, debug=False)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
