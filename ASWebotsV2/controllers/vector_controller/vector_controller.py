@@ -58,7 +58,7 @@ topics = {}
 notfinished = True
 target_position = None
 
-target_tolerance = 150
+target_tolerance = 170
 
 # Movement functions
 def MoveForward(duration):
@@ -326,42 +326,93 @@ def pathing_light():
             MoveForward(1)
 
 def steer_to_vector(current_vector, target_vector):
+    print("I love chicken")
     current_vector = normalize_vector(current_vector)
     target_vector = normalize_vector(target_vector)
 
     dot_product = np.dot(current_vector, target_vector)
-    angle_diff = math.degrees(math.acos(dot_product))
-
     cross_product = np.cross(current_vector, target_vector)
-
-    if cross_product > 0:
-        direction = -1  # Left
-    else:
-        direction = 1  # Right
-
-    turn_rate = angle_diff / 180
-    if direction > 0:
-        SpinLeft(turn_rate)
-    else:
-        SpinRight(turn_rate)
     
-    MoveForward(1)
+    turn_rate = 0.2
+    speed = 0.2
+    angle_radians = math.acos(dot_product)
+    angle_degrees = math.degrees(angle_radians)
+    print(f"dot: {dot_product}")
+    print(f"angle: {angle_degrees}")
+    print(f"cross: {cross_product}")
+    # If the dot product is close to 1, move forward
+    if dot_product > 0.9659:
+        MoveForward(speed)
+    else:
+        # Adjust direction
+        if cross_product > 0:
+            SpinRight(turn_rate)
+            MoveForward(speed)
+        else:
+            SpinLeft(turn_rate)
+            MoveForward(speed)
 
 def move_to_position(current_position, current_vector, target_position, tolerance):
+    print("I love burger")
     target_x, target_y = target_position
     current_x, current_y = current_position
-
+    
+    
     distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
     
     #distance_x = abs(target_x - current_x)
     #distance_y = abs(target_y - current_y)
-    
+    print(f"distance: {distance}")
     if distance <= tolerance:
+        print("withing distance")
         return False  
+    # distance_x = abs(target_x - current_x)
+    # distance_y = abs(target_y - current_y)
+    # print(distance_x)
+    # print(distance_y)
+    # if distance_x <= tolerance and distance_y <= tolerance:
+    #     print("withing distance")
+    #     return False   
     target_vector = (target_x - current_x, target_y - current_y)
     steer_to_vector(current_vector, target_vector)
-    MoveForward(1)
     return True  
+# def steer_to_vector(current_vector, target_vector):
+#     current_vector = normalize_vector(current_vector)
+#     target_vector = normalize_vector(target_vector)
+
+#     dot_product = np.dot(current_vector, target_vector)
+#     angle_diff = math.degrees(math.acos(dot_product))
+
+#     cross_product = np.cross(current_vector, target_vector)
+
+#     if cross_product > 0:
+#         direction = -1  # Left
+#     else:
+#         direction = 1  # Right
+
+#     turn_rate = angle_diff / 180
+#     if direction > 0:
+#         SpinLeft(turn_rate)
+#     else:
+#         SpinRight(turn_rate)
+    
+#     MoveForward(1)
+
+# def move_to_position(current_position, current_vector, target_position, tolerance):
+#     target_x, target_y = target_position
+#     current_x, current_y = current_position
+
+#     distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
+    
+#     #distance_x = abs(target_x - current_x)
+#     #distance_y = abs(target_y - current_y)
+    
+#     if distance <= tolerance:
+#         return False  
+#     target_vector = (target_x - current_x, target_y - current_y)
+#     steer_to_vector(current_vector, target_vector)
+#     MoveForward(1)
+#     return True  
 
     
 def steer_to_angle(target_angle):

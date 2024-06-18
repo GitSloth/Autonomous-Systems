@@ -78,7 +78,7 @@ left_velocity = settings["left_velocity"]
 right_velocity = settings["right_velocity"]
 
 # mqtt settings
-broker = '145.24.238.235' # change ip based on network 
+broker = settings["mqtt_broker"] # change ip based on network 
 port = 1883
 client_id = f'robot_{random.randint(0, 10000)}'
 client = MQTTClient(client_id, broker, port)
@@ -91,7 +91,7 @@ update_interval = 50  # Update interval in milliseconds
 notfinished = True
 target_position = None
 
-target_tolerance = 60
+target_tolerance = 170
 
 # positioning
 radius = 80
@@ -138,6 +138,8 @@ def MoveForward(duration):
     set_servo_speed_right(0)
 
 def MoveBack(duration):
+    global left_velocity
+    global right_velocity
     print("MoveBack called with duration:", duration)
     set_servo_speed_left(-left_velocity)
     set_servo_speed_right(-right_velocity)
@@ -148,6 +150,8 @@ def MoveBack(duration):
     set_servo_speed_right(0)
 
 def SpinLeft(duration):
+    global left_velocity
+    global right_velocity
     set_servo_speed_left(0)
     set_servo_speed_right(right_velocity)
     end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
@@ -157,6 +161,8 @@ def SpinLeft(duration):
     set_servo_speed_right(0)
 
 def SpinRight(duration):
+    global left_velocity
+    global right_velocity
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(0)
     end_time = time.ticks_add(time.ticks_ms(), int(duration * 1000))  # Convert duration to milliseconds
@@ -168,6 +174,8 @@ def SpinRight(duration):
 
 
 def MoveForwardCont():
+    global left_velocity
+    global right_velocity
     print("MoveForwardCont called")
     set_servo_speed_left(left_velocity)
     set_servo_speed_right(right_velocity)
@@ -299,7 +307,7 @@ def normalize_vector(vector):
 
 def avoid_collisions(current_position, normalized_vector, intersections, border_intersections):
      """Adjust movements to avoid collisions."""
-    
+     print("I love pedro")
      # Process intersections with other bots
      for point in intersections:
          vector_to_point = (point[0] - current_position[0], point[1] - current_position[1])
@@ -349,12 +357,14 @@ def avoid_collisions(current_position, normalized_vector, intersections, border_
      print("No collisions detected")
 
 def pathing_light():
+    print("I love beer")
     global robot_data
     global client_id
     global last_spin_time
     global notfinished
     global target_position  # New global to hold target position
     global target_tolerance
+    global radius
     try:
         current_position = robot_data[client_id]['position']
         current_vector = robot_data[client_id]['vector']
@@ -368,7 +378,7 @@ def pathing_light():
         return
     if intersections or border_intersections:
         avoid_collisions(current_position, current_vector, intersections, border_intersections)
-    elif target_position:  # If a target position is set, move towards it
+    elif target_position is not None:  # If a target position is set, move towards it
         if not move_to_position(current_position, current_vector, target_position, target_tolerance):
             notfinished = False
             Stop()
@@ -383,7 +393,7 @@ def pathing_light():
             distance = distance_readings[highest_ldr_index]
             print(distance)
             print(highest_ldr_value)
-            if highest_ldr_value > ldr_max_threshold and distance < 130:
+            if highest_ldr_value > ldr_max_threshold and distance < 170:
                 
                 print("Found it!")
                 notfinished = False
@@ -394,53 +404,64 @@ def pathing_light():
                 steer_to_angle(highest_ldr_angle)  
             else:
                 print(f"LDR values to low ({ldr_min_threshold})")
-            last_spin_time = time.ticks_add(time.ticks_ms(), int(1000))
+            last_spin_time = time.ticks_add(time.ticks_ms(), int(300))
             
         else:
             MoveForwardCont()
         
 def steer_to_vector(current_vector, target_vector):
+    print("I love chicken")
     current_vector = normalize_vector(current_vector)
     target_vector = normalize_vector(target_vector)
 
-    dot_product = dot_product(current_vector, target_vector)
-    angle_diff = math.degrees(math.acos(dot_product))
-
-    cross_product = cross_product(current_vector, target_vector)
-
-    if cross_product > 0:
-        direction = -1  # Left
-    else:
-        direction = 1  # Right
-
-    turn_rate = angle_diff / 180
-    if direction > 0:
-        SpinLeft(turn_rate)
-    else:
-        SpinRight(turn_rate)
+    dot_product = calc_dot_product(current_vector, target_vector)
+    cross_product = calc_cross_product(current_vector, target_vector)
     
-    MoveForward(0.3)
+    turn_rate = 0.1
+    speed = 0.2
+    angle_radians = math.acos(dot_product)
+    angle_degrees = math.degrees(angle_radians)
+    print(f"dot: {dot_product}")
+    print(f"angle: {angle_degrees}")
+    print(f"cross: {cross_product}")
+    # If the dot product is close to 1, move forward
+    if dot_product > 0.9659:
+        MoveForward(speed)
+    else:
+        # Adjust direction
+        if cross_product > 0:
+            SpinRight(turn_rate)
+        else:
+            SpinLeft(turn_rate)
 
 def move_to_position(current_position, current_vector, target_position, tolerance):
+    print("I love burger")
     target_x, target_y = target_position
     current_x, current_y = current_position
+    
     
     distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
     
     #distance_x = abs(target_x - current_x)
     #distance_y = abs(target_y - current_y)
-    print(distance)
+    print(f"distance: {distance}")
     if distance <= tolerance:
-        return False   
+        print("withing distance")
+        return False  
+    # distance_x = abs(target_x - current_x)
+    # distance_y = abs(target_y - current_y)
+    # print(distance_x)
+    # print(distance_y)
+    # if distance_x <= tolerance and distance_y <= tolerance:
+    #     print("withing distance")
+    #     return False   
     target_vector = (target_x - current_x, target_y - current_y)
     steer_to_vector(current_vector, target_vector)
-    MoveForward(0.3)
     return True  
 
     
 def steer_to_angle(target_angle):
     #target_angle %= 360  # Normalize the target angle to 0-359 degrees
-    print(target_angle)
     print(target_angle)
     if 0 <= target_angle <= 90:
         SpinRight(target_angle / 90)
@@ -597,11 +618,13 @@ distance_sensor.start()
 while True:
     try:
         client.check_msg()  # Check for new messages
+        #print(ldr.read_u16())
         #print(f"distance: {distance_sensor.read()}")
         #print(f". :{ldr.read_u16()}")
         #print("panmotor")
         #PanMotor.duty_u16(5000)
         # Check if it's time to send an update
+        
         if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started and notfinished:
             client.publish(topics['send'], b"request_positions")
             last_update = time.ticks_ms()  # Update the last update time
@@ -613,6 +636,7 @@ while True:
             #print(time.ticks_diff(time.ticks_ms(), time_start))
         if not notfinished:
             distance_sensor.stop()
+            
     except OSError as e:
         print(f"Error in main loop: {e}")
         time.sleep(2)  # Wait before retrying
@@ -621,4 +645,3 @@ while True:
     except Exception as e:
        print(e)
     time.sleep(0.01)
-
