@@ -231,21 +231,23 @@ def check_border_intersection(current_position, radius, width, height):
     """Check if a circle intersects with the borders of the image."""
     x, y = current_position
     intersections = []
+    # augments the detection radius for the border
+    corrected_radius = radius + radius_correction
     
     # Check intersection with the left border (x = 0)
-    if x - radius < radius_correction:
+    if x < corrected_radius:
         intersections.append((0, y))
     
     # Check intersection with the right border (x = width)
-    if x + radius > width - radius_correction:
+    if x > width - corrected_radius:
         intersections.append((width, y))
     
     # Check intersection with the top border (y = 0)
-    if y - radius < radius_correction:
+    if y < corrected_radius:
         intersections.append((x, 0))
     
     # Check intersection with the bottom border (y = height)
-    if y + radius > height - radius_correction:
+    if y > height - corrected_radius:
         intersections.append((x, height))
     
     return intersections
