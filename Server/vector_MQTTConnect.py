@@ -4,6 +4,20 @@ import json
 import threading
 from ImageProcessing.vector_marker_detection import MarkerDetector
 import logging
+import heapq
+import math
+import numpy as np
+
+
+cameraSource1 = 0
+camType1 = 0
+enableCam2 = True
+cameraSource2 ='http://localhost:5005/video_feed' 
+camType2 = 2
+debug = True
+
+movement_threshold = 10
+
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -21,13 +35,15 @@ started = False
 
 lock = threading.Lock()
 
+
+
 def start_camera():
     '''
     Setup the video feed needed to get the marker positions.
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
-    detector  = MarkerDetector(cameraSource1=0, camType1=0, enableCam2=True, cameraSource2='http://localhost:5005/video_feed', camType2=2, debug=True)
+    detector  = MarkerDetector(cameraSource1, camType1, enableCam2, cameraSource2, camType2, debug)
     time.sleep(5)
 
 def on_connect(client, userdata, flags, rc):
@@ -112,7 +128,7 @@ def handle_foundit_payload(client, payload):
         logger.error(f"Error processing 'foundit' payload: {e}")
 # todo:
 # - potentially add an error loop when it cannot find a match because it misses a detection that particular look
-def setup_bots(client, threshold=10):
+def setup_bots(client):
     '''
     Couples the marker id to a robot id by checking the position, moving the bot and checking which bot moved.
     param client: mqtt client
@@ -151,7 +167,7 @@ def setup_bots(client, threshold=10):
                     #print(f"Movement detected - x: {x_moved}, y: {y_moved}")
 
                     # if the marker has moved more than the threshold, add it to the bots_matched dictionary
-                    if x_moved > threshold or y_moved > threshold:
+                    if x_moved > movement_threshold or y_moved > movement_threshold:
                         bots_matched.update({bot: new_marker['id']})
                         start_positions = new_positions
                         
