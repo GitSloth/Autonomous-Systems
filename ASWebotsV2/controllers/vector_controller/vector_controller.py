@@ -21,12 +21,9 @@ ldr = robot.getDevice('light sensor')
 # sensor readings
 ldr_readings = []
 distance_readings = []
-radius = 80
-<<<<<<< Updated upstream
+radius = 60
 reduced_radius = 40
-=======
-radius_correction = 40
->>>>>>> Stashed changes
+radius_correction = 60
 robot_data = {}
 
 #ldr zooi
@@ -160,29 +157,7 @@ def process_range_image(image):
             min_distance = distance
     return min_distance
     
-# def calculate_intersection_points(coord1, coord2, radius):
-#     """Calculate the intersection points of two bots given their positions and direction vectors."""
-#     d = np.linalg.norm(np.array(coord1) - np.array(coord2))
-    
-#     # No intersection if distance is greater than 2 times the radius or zero
-#     if d > 2 * radius or d == 0:
-#         return None
-    
-#     a = (radius**2 - radius**2 + d**2) / (2 * d)
-#     h = math.sqrt(radius**2 - a**2)
-    
-#     x2 = coord1[0] + a * (coord2[0] - coord1[0]) / d
-#     y2 = coord1[1] + a * (coord2[1] - coord1[1]) / d
-    
-#     x3 = x2 + h * (coord2[1] - coord1[1]) / d
-#     y3 = y2 - h * (coord2[0] - coord1[0]) / d
-    
-#     x4 = x2 - h * (coord2[1] - coord1[1]) / d
-#     y4 = y2 + h * (coord2[0] - coord1[0]) / d
-    
-#     midpoint_x = (x3 + x4) / 2
-#     midpoint_y = (y3 + y4) / 2
-#     return (midpoint_x, midpoint_y)
+
 def calculate_intersection_points(coord1, coord2, radius):
     """Calculate the intersection points of two bots given their positions and direction vectors."""
     coord1 = np.array(coord1)
