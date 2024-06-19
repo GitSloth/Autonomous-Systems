@@ -63,6 +63,9 @@ target_position = None
 target_tolerance = 170
 reduced_avoidance_radius = 300
 
+def euclidian_distance(vector1, vector2):
+    return np.linalg.norm(vector1, vector2)
+
 # Movement functions
 def MoveForward(duration):
     print("MoveForward called with duration:", duration)
@@ -163,7 +166,7 @@ def calculate_intersection_points(coord1, coord2, radius):
     coord1 = np.array(coord1)
     coord2 = np.array(coord2)
     
-    d = np.linalg.norm(coord1 - coord2)
+    d = euclidian_distance(coord1, coord2)
     
     # No intersection if distance is greater than 2 times the radius or zero
     if d > 2 * radius or d == 0:
@@ -350,16 +353,14 @@ def pathing_target():
     distance_to_target = None
     reduction_factor = 1.0
     if target_position:
-        distance_to_target = math.sqrt(
-            (target_position[0] - current_position[0]) ** 2 +
-            (target_position[1] - current_position[1]) ** 2
-        )
+        distance_to_target = euclidian_distance(target_position, current_position)
         if distance_to_target < reduced_avoidance_radius:
             reduction_factor = distance_to_target / reduced_avoidance_radius
 
     print(f"Distance to target: {distance_to_target}, Reduction factor: {reduction_factor}")
     intersections = check_intersections(current_position, current_vector, reduced_radius)
     border_intersections = check_border_intersection(current_position, reduced_radius, 1280, 720)
+
     if intersections or border_intersections:
         avoid_collisions(current_position, current_vector, intersections, border_intersections)
     else:
@@ -397,8 +398,7 @@ def move_to_position(current_position, current_vector, target_position, toleranc
     target_x, target_y = target_position
     current_x, current_y = current_position
     
-    
-    distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
+    distance = euclidian_distance(current_position, target_position)
     
     print(f"distance: {distance}")
     if distance <= tolerance:
