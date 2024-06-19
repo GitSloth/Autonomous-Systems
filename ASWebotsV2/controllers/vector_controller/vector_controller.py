@@ -22,7 +22,11 @@ ldr = robot.getDevice('light sensor')
 ldr_readings = []
 distance_readings = []
 radius = 80
+<<<<<<< Updated upstream
 reduced_radius = 40
+=======
+radius_correction = 40
+>>>>>>> Stashed changes
 robot_data = {}
 
 #ldr zooi
@@ -229,19 +233,19 @@ def check_border_intersection(current_position, radius, width, height):
     intersections = []
     
     # Check intersection with the left border (x = 0)
-    if x - radius < 40:
+    if x - radius < radius_correction:
         intersections.append((0, y))
     
     # Check intersection with the right border (x = width)
-    if x + radius > width - 40:
+    if x + radius > width - radius_correction:
         intersections.append((width, y))
     
     # Check intersection with the top border (y = 0)
-    if y - radius < 40:
+    if y - radius < radius_correction:
         intersections.append((x, 0))
     
     # Check intersection with the bottom border (y = height)
-    if y + radius > height - 40:
+    if y + radius > height - radius_correction:
         intersections.append((x, height))
     
     return intersections
