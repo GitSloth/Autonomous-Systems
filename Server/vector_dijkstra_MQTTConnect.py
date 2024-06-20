@@ -74,7 +74,7 @@ def start_camera():
             time.sleep(2) #wait a little before next attempt
     
     if not success:
-        logger.error("Failed To Start Camera After Multiple Attempts")
+        logger.critical("Failed To Start Camera After Multiple Attempts")
 
 
 def detector_check(detector):
@@ -241,8 +241,6 @@ def distribute_targets(client, robot_target_positions):
         client.publish(f"robots/{bot_id}/receive", f"foundit {{{target_position[0]}, {target_position[1]}}}")
         logger.info(f"Published new position {target_position} to robot {bot_id}")
 
-# todo:
-# - potentially add an error loop when it cannot find a match because it misses a detection that particular look
 def setup_bots(client):
     '''
     Couples the marker id to a robot id by checking the position, moving the bot and checking which bot moved.
@@ -256,38 +254,58 @@ def setup_bots(client):
         logger.info("no bots connected")
         return
     # get the initial positions to compare against later.
-    start_positions = detector.detectMarkers()
-    for bot in bots_mqtt:
-        # send each bot forward and wait 3 seconds, then get the new positions.
-        client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
-        client.loop()
-        logger.info(f"Command sent to bot: {bot}")
-        time.sleep(3)
-        new_positions = detector.detectMarkers()
-        # check if the detection worked
-        if not new_positions:
-            logger.warning("No markers detected after bot move.")
-            continue
+
+    try:
+        start_positions = detector.detectMarkers()
+        if not start_positions:
+            raise RuntimeError("Failed To Detect Initial Markers")
         
-        # go through each marker and compare them
-        for new_marker in new_positions:
-            new_x, new_y = new_marker['position']
-            for start_marker in start_positions:
-                if new_marker['id'] == start_marker['id']:  
-                    start_x, start_y = start_marker['position']
+        for bot in bots_mqtt:
+            try:
+                # send each bot forward and wait 3 seconds, then get the new positions.
+                client.publish(f"robots/{bot}/receive", f"MOVE_FORWARD")
+                client.loop()
+                logger.info(f"Command sent to bot: {bot}")
+                time.sleep(3)
+                
+                new_positions = detector.detectMarkers()
 
-                    x_moved = abs(new_x - start_x)
-                    y_moved = abs(new_y - start_y)
+            # check if the detection worked
+                if not new_positions:
+                    raise RuntimeError("No markers detected after bot move.")
+            
+                matched = False
+            
+                # go through each marker and compare them
+                for new_marker in new_positions:
+                    new_x, new_y = new_marker['position']
+                    for start_marker in start_positions:
+                        if new_marker['id'] == start_marker['id']:  
+                            start_x, start_y = start_marker['position']
+                            x_moved = abs(new_x - start_x)
+                            y_moved = abs(new_y - start_y)
 
-                    #print(f"Movement detected - x: {x_moved}, y: {y_moved}")
+                            #print(f"Movement detected - x: {x_moved}, y: {y_moved}")
 
-                    # if the marker has moved more than the threshold, add it to the bots_matched dictionary
-                    if x_moved > movement_threshold or y_moved > movement_threshold:
-                        bots_matched.update({bot: new_marker['id']})
-                        start_positions = new_positions
-                        
-                        logger.info(f"Bot {bot} matched with Marker ID {new_marker['id']}")
-                        break  # Exit inner loop once a match is found
+                            # if the marker has moved more than the threshold, add it to the bots_matched dictionary
+                            if x_moved > movement_threshold or y_moved > movement_threshold:
+                                bots_matched.update({bot: new_marker['id']})
+                                start_positions = new_positions
+                                logger.info(f"Bot {bot} matched with Marker ID {new_marker['id']}")
+                                matched = True
+                                break  # Exit inner loop once a match is found
+                    
+                    if matched:
+                        break
+                
+                if not matched:
+                    logger.warning(f"Bot {bot} Could Not Be Matched With Any Marker")
+            
+            except Exception as e:
+                logger.error(f"Error Matching Bot {bot}: {e}")
+
+    except Exception as e:
+        logger.critical(f"Failed To Setup Bots {bot}: {e}")    
 
     logger.info("Bots matched: %s", bots_matched)
 
