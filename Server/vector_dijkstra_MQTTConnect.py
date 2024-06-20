@@ -38,14 +38,53 @@ lock = threading.Lock()
 
 
 
-def start_camera():
+"""def start_camera():
     '''
     Setup the video feed needed to get the marker positions.
     Waits 5 seconds to give the streams some time to start up.
     '''
     global detector
     detector  = MarkerDetector(cameraSource1, camType1, enableCam2, cameraSource2, camType2, debug)
-    time.sleep(5)
+    time.sleep(5) """
+
+def start_camera():
+    '''
+    Setup the video feed needed to get the marker positions.
+    Waits 5 seconds to give the streams some time to start up.
+    '''
+    global detector
+    retry_attempts = 3
+    attempt = 0
+    camera_success = False
+
+    while attempt < retry_attempts and not camera_success:
+        try:
+            detector = MarkerDetector(cameraSource1, camType1, enableCam2, cameraSource2, camType2, debug)
+            time.sleep(5)
+
+            if detector_check(detector):
+                success = True
+                logger.info("Camera Start Successful")
+            else:
+                raise RuntimeError("MarkerDetector Initialization Failed")
+        
+        except Exception as e:
+            attempt += 1
+            logger.error(f"Error With Initialization Camera: {e} Attempt {attempt} of {retry_attempts}")
+            time.sleep(2) #wait a little before next attempt
+    
+    if not success:
+        logger.error("Failed To Start Camera After Multiple Attempts")
+
+
+def detector_check(detector):
+    try:
+        detector.detectMarkers() #tries to call function to see if properly initialized
+        return True
+    except Exception as e:
+        logger.error(f"Problem with Detector Initialization: {e}")
+        return False
+
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -121,7 +160,7 @@ def handle_foundit_payload(client, payload):
         x_center, y_center = coordinates[0], coordinates[1]
 
         # Create target circle around the received center coordinates
-        robot_target_positions = create_target_circle(x_center, y_center)
+        robot_target_positions = create_target_circle( x_center, y_center)
 
         # Use Dijkstra's algorithm to distribute targets efficiently
         distribute_targets(client, robot_target_positions)
@@ -134,7 +173,7 @@ def handle_foundit_payload(client, payload):
 def euclidean_distance(vector1, vector2):
     return np.linalg.norm(np.array(vector1) - np.array(vector2))
 
-def create_target_circle(client, x_coordinate, y_coordinate):
+def create_target_circle( x_coordinate, y_coordinate):
     global bots_mqtt
 
     if not bots_mqtt:
