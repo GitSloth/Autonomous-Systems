@@ -60,11 +60,12 @@ topics = {}
 notfinished = True
 target_position = None
 
-target_tolerance = 170
+target_tolerance = 60
 reduced_avoidance_radius = 300
 
 def euclidian_distance(vector1, vector2):
-    return np.linalg.norm(vector1, vector2)
+    return np.linalg.norm(np.array(vector1) - np.array(vector2))
+
 
 # Movement functions
 def MoveForward(duration):
