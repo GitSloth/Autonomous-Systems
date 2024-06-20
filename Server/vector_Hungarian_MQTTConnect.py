@@ -7,7 +7,7 @@ import logging
 import heapq
 import math
 import numpy as np
-from hungarian_algorithm import algorithm as hungarian
+from scipy.optimize import linear_sum_assignment
 
 #camera setup parameters
 cameraSource1 = 0
@@ -222,40 +222,51 @@ def create_target_circle( x_coordinate, y_coordinate):
 
 #The 'parking spaces' get distributed to the bots based on Dijkstra's algorithm
 def distribute_targets(client, robot_target_positions):
-    global bots_position, bots_mqtt
+    global bots_position, bots_mqtt, logger
 
     if not bots_mqtt:
         logger.warning("No robots connected.")
         return
 
     # Prepare data for the Hungarian algorithm
-    robot_data = {}
-    for bot_id, position_data in bots_position.items():
-        robot_data[bot_id] = position_data['position']
+    robot_positions = []
+    for bot_id in bots_mqtt:
+        if bot_id in bots_position:
+            robot_positions.append(bots_position[bot_id]['position'])
+        else:
+            logger.warning(f"No position data found for robot {bot_id}. Skipping.")
+    
+    num_robots = len(robot_positions)
+    num_targets = len(robot_target_positions)
 
-    # Convert positions to arrays for distance calculation
-    robot_positions = [robot_data[bot_id] for bot_id in bots_mqtt]
-    target_positions = robot_target_positions[:len(robot_positions)]  # Take as many targets as robots
+    if num_robots == 0:
+        logger.warning("No robots with position data.")
+        return
+
+    if num_targets == 0:
+        logger.warning("No target positions provided.")
+        return
 
     # Calculate cost matrix based on Euclidean distances
-    cost_matrix = []
-    for robot_pos in robot_positions:
-        row = []
-        for target_pos in target_positions:
-            row.append(euclidean_distance(robot_pos, target_pos))
-        cost_matrix.append(row)
+    cost_matrix = np.zeros((num_robots, num_targets))
+    for i in range(num_robots):
+        for j in range(num_targets):
+            cost_matrix[i, j] = euclidean_distance(robot_positions[i], robot_target_positions[j])
 
-    # Solve the assignment problem using Hungarian algorithm
-    hungarian_algorithm = hungarian.Hungarian()
-    hungarian_algorithm.calculate(cost_matrix)
-    assignments = hungarian_algorithm.get_results()
+    # Solve the assignment problem using scipy's linear_sum_assignment (Hungarian algorithm)
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+
+    # Map robots to their assigned target positions
+    assigned_positions = {}
+    for i in range(len(row_ind)):
+        robot_id = bots_mqtt[row_ind[i]]
+        target_position = robot_target_positions[col_ind[i]]
+        assigned_positions[robot_id] = target_position
 
     # Publish new positions to robots based on optimal assignment
-    for robot_index, target_index in assignments:
-        bot_id = bots_mqtt[robot_index]
-        target_position = target_positions[target_index]
-        client.publish(f"robots/{bot_id}/receive", f"foundit {{{target_position[0]}, {target_position[1]}}}")
-        logger.info(f"Published new position {target_position} to robot {bot_id}")
+    for robot_id, target_position in assigned_positions.items():
+        client.publish(f"robots/{robot_id}/receive", f"foundit {{{target_position[0]}, {target_position[1]}}}")
+        logger.info(f"Published new position {target_position} to robot {robot_id}")
 
 
 def setup_bots(client):
