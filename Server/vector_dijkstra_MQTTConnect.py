@@ -9,11 +9,11 @@ import math
 import numpy as np
 
 #camera setup parameters
-cameraSource1 = 0
-camType1 = 0
-enableCam2 = True
-cameraSource2 ='http://localhost:5005/video_feed' 
-camType2 = 2
+cameraSource1 = 'http://localhost:5005/video_feed' 
+camType1 = 2
+enableCam2 = False
+cameraSource2 = 0
+camType2 = 0
 debug = True
 
 #movement data
@@ -53,7 +53,7 @@ def start_camera():
             time.sleep(5)
 
             if detector_check(detector):
-                success = True
+                camera_success = True
                 logger.info("Camera Start Successful")
             else:
                 raise RuntimeError("MarkerDetector Initialization Failed")
@@ -61,9 +61,10 @@ def start_camera():
         except Exception as e:
             attempt += 1
             logger.error(f"Error With Initialization Camera: {e} Attempt {attempt} of {retry_attempts}")
+            
             time.sleep(2) #wait a little before next attempt
     
-    if not success:
+    if not camera_success:
         logger.critical("Failed To Start Camera After Multiple Attempts")
 
 #Check if detector is properly initialized
@@ -214,8 +215,8 @@ def create_target_circle( x_coordinate, y_coordinate):
 
     for i in range(num_robots):
         angle = i * angle_increment
-        x = x_coordinate + circle_radius * math.cos(angle)
-        y = y_coordinate + circle_radius * math.sin(angle)
+        x = int(x_coordinate + circle_radius * math.cos(angle))
+        y = int(y_coordinate + circle_radius * math.sin(angle))
         robot_target_positions.append((x,y))
     return robot_target_positions
 
