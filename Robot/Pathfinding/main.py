@@ -6,6 +6,7 @@ from umqtt.simple import MQTTClient
 import network
 import math
 import json
+from ulab import numpy as np
 
 def read_settings():
     try:
@@ -91,11 +92,11 @@ update_interval = 50  # Update interval in milliseconds
 notfinished = True
 target_position = None
 
-target_tolerance = 170
+target_tolerance = 20
 
 # positioning
 radius = 80
-border_buffer = 40
+radius_correction = 60
 robot_data = {}
 pos_updated = False
 started = False
@@ -171,8 +172,6 @@ def SpinRight(duration):
     set_servo_speed_left(0)
     set_servo_speed_right(0)
 
-
-
 def MoveForwardCont():
     global left_velocity
     global right_velocity
@@ -231,29 +230,60 @@ def reboot():
     print('Rebooting...')
     machine.reset()
 
+def euclidian_distance(vector1, vector2):
+    return np.linalg.norm(np.array(vector1) - np.array(vector2))
+
 def calculate_intersection_points(coord1, coord2, radius):
     """Calculate the intersection points of two bots given their positions and direction vectors."""
-    d = math.sqrt((coord2[0] - coord1[0]) ** 2 + (coord2[1] - coord1[1]) ** 2)
+    coord1 = np.array(coord1)
+    coord2 = np.array(coord2)
+    
+    d = euclidian_distance(coord1, coord2)
     
     # No intersection if distance is greater than 2 times the radius or zero
     if d > 2 * radius or d == 0:
         return None
     
-    a = (radius**2 - radius**2 + d**2) / (2 * d)
-    h = math.sqrt(radius**2 - a**2)
+    radius_squared = radius**2
+    a = d / 2
+    h = math.sqrt(radius_squared - a**2)
     
-    x2 = coord1[0] + a * (coord2[0] - coord1[0]) / d
-    y2 = coord1[1] + a * (coord2[1] - coord1[1]) / d
+    midpoint = (coord1 + coord2) / 2
     
-    x3 = x2 + h * (coord2[1] - coord1[1]) / d
-    y3 = y2 - h * (coord2[0] - coord1[0]) / d
+    direction = (coord2 - coord1) / d
     
-    x4 = x2 - h * (coord2[1] - coord1[1]) / d
-    y4 = y2 + h * (coord2[0] - coord1[0]) / d
+    perpendicular = np.array([-direction[1], direction[0]])
     
-    midpoint_x = (x3 + x4) / 2
-    midpoint_y = (y3 + y4) / 2
-    return (midpoint_x, midpoint_y)
+    intersection1 = midpoint + h * perpendicular
+    intersection2 = midpoint - h * perpendicular
+    
+    # Calculating the midpoint
+    intersection_midpoint = (intersection1 + intersection2) / 2
+    
+    return tuple(intersection_midpoint)
+# def calculate_intersection_points(coord1, coord2, radius):
+#     """Calculate the intersection points of two bots given their positions and direction vectors."""
+#     d = math.sqrt((coord2[0] - coord1[0]) ** 2 + (coord2[1] - coord1[1]) ** 2)
+    
+#     # No intersection if distance is greater than 2 times the radius or zero
+#     if d > 2 * radius or d == 0:
+#         return None
+    
+#     a = (radius**2 - radius**2 + d**2) / (2 * d)
+#     h = math.sqrt(radius**2 - a**2)
+    
+#     x2 = coord1[0] + a * (coord2[0] - coord1[0]) / d
+#     y2 = coord1[1] + a * (coord2[1] - coord1[1]) / d
+    
+#     x3 = x2 + h * (coord2[1] - coord1[1]) / d
+#     y3 = y2 - h * (coord2[0] - coord1[0]) / d
+    
+#     x4 = x2 - h * (coord2[1] - coord1[1]) / d
+#     y4 = y2 + h * (coord2[0] - coord1[0]) / d
+    
+#     midpoint_x = (x3 + x4) / 2
+#     midpoint_y = (y3 + y4) / 2
+#     return (midpoint_x, midpoint_y)
 
 def check_intersections(current_position, current_vector, radius):
     """Get the points of intersection with other bots."""
@@ -274,21 +304,23 @@ def check_border_intersection(current_position, radius, width, height):
     """Check if a circle intersects with the borders of the image."""
     x, y = current_position
     intersections = []
+    # augments the detection radius for the border
+    corrected_radius = radius + radius_correction
     
     # Check intersection with the left border (x = 0)
-    if x - radius < border_buffer:
+    if x < corrected_radius:
         intersections.append((0, y))
     
     # Check intersection with the right border (x = width)
-    if x + radius > width - border_buffer:
+    if x > width - corrected_radius:
         intersections.append((width, y))
     
     # Check intersection with the top border (y = 0)
-    if y - radius < border_buffer:
+    if y < corrected_radius:
         intersections.append((x, 0))
     
     # Check intersection with the bottom border (y = height)
-    if y + radius > height - border_buffer:
+    if y > height - corrected_radius:
         intersections.append((x, height))
     
     return intersections
@@ -357,7 +389,6 @@ def avoid_collisions(current_position, normalized_vector, intersections, border_
      print("No collisions detected")
 
 def pathing_light():
-    print("I love beer")
     global robot_data
     global client_id
     global last_spin_time
@@ -396,10 +427,11 @@ def pathing_light():
             if highest_ldr_value > ldr_max_threshold and distance < 170:
                 
                 print("Found it!")
-                notfinished = False
+                #notfinished = False
                 client.publish(topics['send'], f"foundit {current_position}")
-                Stop()   
-                print(f"Current position: {current_position}")
+                MoveBack(1)
+                #Stop()   
+                #print(f"Current position: {current_position}")
             elif highest_ldr_value >= ldr_min_threshold:
                 steer_to_angle(highest_ldr_angle)  
             else:
@@ -435,39 +467,34 @@ def steer_to_vector(current_vector, target_vector):
             SpinLeft(turn_rate)
 
 def move_to_position(current_position, current_vector, target_position, tolerance):
-    print("I love burger")
     target_x, target_y = target_position
     current_x, current_y = current_position
     
+    distance = euclidian_distance(current_position, target_position)
     
-    distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
-    
-    #distance_x = abs(target_x - current_x)
-    #distance_y = abs(target_y - current_y)
     print(f"distance: {distance}")
     if distance <= tolerance:
         print("withing distance")
         return False  
-    # distance_x = abs(target_x - current_x)
-    # distance_y = abs(target_y - current_y)
-    # print(distance_x)
-    # print(distance_y)
-    # if distance_x <= tolerance and distance_y <= tolerance:
-    #     print("withing distance")
-    #     return False   
+     
     target_vector = (target_x - current_x, target_y - current_y)
     steer_to_vector(current_vector, target_vector)
     return True  
-
     
+# def steer_to_angle(target_angle):
+#     #target_angle %= 360  # Normalize the target angle to 0-359 degrees
+#     print(target_angle)
+#     if 0 <= target_angle <= 90:
+#         SpinRight(target_angle / 90)
+#     elif 91 <= target_angle <= 180:
+#         SpinLeft((target_angle - 90) / 90)
 def steer_to_angle(target_angle):
-    #target_angle %= 360  # Normalize the target angle to 0-359 degrees
-    print(target_angle)
-    if 0 <= target_angle <= 90:
-        SpinRight(target_angle / 90)
-    elif 91 <= target_angle <= 180:
-        SpinLeft((target_angle - 90) / 90)
-    
+    target_angle %= 360  # Normalize the target angle to 0-359 degrees
+
+    if target_angle > 180:
+        SpinRight((360 - target_angle) / 180)
+    else:
+        SpinLeft(target_angle / 180)
 # MQTT callbacks
 def on_message(topic, msg):
     print("I love cheese")
