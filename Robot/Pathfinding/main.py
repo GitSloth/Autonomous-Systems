@@ -618,13 +618,6 @@ distance_sensor.start()
 while True:
     try:
         client.check_msg()  # Check for new messages
-        #print(ldr.read_u16())
-        #print(f"distance: {distance_sensor.read()}")
-        #print(f". :{ldr.read_u16()}")
-        #print("panmotor")
-        #PanMotor.duty_u16(5000)
-        # Check if it's time to send an update
-        
         if time.ticks_diff(time.ticks_ms(), last_update) > update_interval and started and notfinished:
             client.publish(topics['send'], b"request_positions")
             last_update = time.ticks_ms()  # Update the last update time
