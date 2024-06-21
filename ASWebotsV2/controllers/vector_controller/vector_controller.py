@@ -6,39 +6,51 @@ import json
 import math
 import time
 import numpy as np
+'''
+todo controller:
+- rewrite the move to position to have variable turn rate
+- rewrite the pathing light:
+	- ?send lightsource even at distance (not sure if that works in webots)
+	- change the found to wait on a target position from the server instead of locking it down
+distance:
+width sim: ~24.35 real: ~2.07
+height sim": ~15.85 real: ~1.17
 
+'''
 robot = Robot()
 
 timestep = int(robot.getBasicTimeStep())
-
-# Initialize motors and sensors
-motor1 = robot.getDevice('motor1')
-motor2 = robot.getDevice('motor2')
-motor3 = robot.getDevice('motor3')
+# sensors 
 range_finder = robot.getDevice('range-finder')
 ldr = robot.getDevice('light sensor')
 
-# sensor readings
+#setup
+last_spin_time = 0
+ldr_min_threshold = 280   
+ldr_max_threshold = 900
+
+distance_scaling_factor = 0.073416 # 0.07341645385809423664313254218617
+ldr.enable(timestep)
+range_finder.enable(timestep)
+#readings
 ldr_readings = []
 distance_readings = []
+
 radius = 60
 reduced_radius = 40
 radius_correction = 60
 robot_data = {}
 
-#ldr zooi
-last_spin_time = 0
-ldr_min_threshold = 280   
-ldr_max_threshold = 900  
 
+
+# Initialize motors and sensors
+motor1 = robot.getDevice('motor1')
+motor2 = robot.getDevice('motor2')
+motor3 = robot.getDevice('motor3')
 # Set initial motor velocities
 motor1.setVelocity(0)
 motor2.setVelocity(0)
 motor3.setVelocity(0)
-
-# Enable sensors
-ldr.enable(timestep)
-range_finder.enable(timestep)
 
 motor1.setPosition(float('inf'))
 motor2.setPosition(float('inf'))
@@ -60,7 +72,7 @@ topics = {}
 notfinished = True
 target_position = None
 
-target_tolerance = 60
+target_tolerance = 20
 reduced_avoidance_radius = 300
 
 def euclidian_distance(vector1, vector2):
@@ -134,7 +146,7 @@ def SpinTop(speed, duration):
 
     for step in range(step_count):
         position_degrees = initial_position + step * angle_step
-        position_radians = position_degrees * (3.14159 / 180)
+        position_radians = position_degrees * (math.pi / 180)
         motor3.setPosition(position_radians)
         motor3.setVelocity(speed)
         end_time = robot.getTime() + duration
@@ -321,7 +333,10 @@ def pathing_light():
             highest_ldr_value = max(ldr_readings)
             highest_ldr_index = ldr_readings.index(highest_ldr_value)
             highest_ldr_angle = angles[highest_ldr_index]
+            highest_ldr_distance = distance_readings[highest_ldr_index]
             print(highest_ldr_value)
+            print(highest_ldr_angle)
+            print(highest_ldr_distance)
             if highest_ldr_value > ldr_max_threshold:
                 print("Found it!")
                 notfinished = False
@@ -368,34 +383,38 @@ def pathing_target():
         MoveForward(0.1)
 
 def steer_to_vector(current_vector, target_vector):
-    print("I love chicken")
     current_vector = normalize_vector(current_vector)
     target_vector = normalize_vector(target_vector)
 
     dot_product = np.dot(current_vector, target_vector)
     cross_product = np.cross(current_vector, target_vector)
     
-    turn_rate = 0.2
+    angle_radians = math.acos(dot_product)
+    angle_degrees = math.degrees(angle_radians)
+
+    max_turn_rate = 1.0
+    min_turn_rate = 0.01
     speed = 0.2
     angle_radians = math.acos(dot_product)
     angle_degrees = math.degrees(angle_radians)
+
+    turn_rate = min_turn_rate + (max_turn_rate - min_turn_rate) * (angle_degrees / 90.0)
     print(f"dot: {dot_product}")
     print(f"angle: {angle_degrees}")
     print(f"cross: {cross_product}")
     # If the dot product is close to 1, move forward
-    if dot_product > 0.9659:
+    if dot_product > 0.9659: # 0.995 5 degrees 15 0.9659
         MoveForward(speed)
     else:
         # Adjust direction
         if cross_product > 0:
             SpinRight(turn_rate)
-            MoveForward(speed)
+            #MoveForward(speed)
         else:
             SpinLeft(turn_rate)
-            MoveForward(speed)
+            #MoveForward(speed)
 
 def move_to_position(current_position, current_vector, target_position, tolerance):
-    print("I love burger")
     target_x, target_y = target_position
     current_x, current_y = current_position
     
@@ -410,45 +429,6 @@ def move_to_position(current_position, current_vector, target_position, toleranc
     steer_to_vector(current_vector, target_vector)
     return True  
 
-# def steer_to_vector(current_vector, target_vector):
-#     current_vector = normalize_vector(current_vector)
-#     target_vector = normalize_vector(target_vector)
-
-#     dot_product = np.dot(current_vector, target_vector)
-#     angle_diff = math.degrees(math.acos(dot_product))
-
-#     cross_product = np.cross(current_vector, target_vector)
-
-#     if cross_product > 0:
-#         direction = -1  # Left
-#     else:
-#         direction = 1  # Right
-
-#     turn_rate = angle_diff / 180
-#     if direction > 0:
-#         SpinLeft(turn_rate)
-#     else:
-#         SpinRight(turn_rate)
-    
-#     MoveForward(1)
-
-# def move_to_position(current_position, current_vector, target_position, tolerance):
-#     target_x, target_y = target_position
-#     current_x, current_y = current_position
-
-#     distance = math.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
-    
-#     #distance_x = abs(target_x - current_x)
-#     #distance_y = abs(target_y - current_y)
-    
-#     if distance <= tolerance:
-#         return False  
-#     target_vector = (target_x - current_x, target_y - current_y)
-#     steer_to_vector(current_vector, target_vector)
-#     MoveForward(1)
-#     return True  
-
-    
 def steer_to_angle(target_angle):
     target_angle %= 360  # Normalize the target angle to 0-359 degrees
 
@@ -532,6 +512,8 @@ def handle_command(command):
         SpinRight(1)
     elif command == "SPIN_TOP":
         SpinTop(10.0, 1)
+    elif command == "START":
+        started = True
     elif command == "stop":
         Stop()
     else:
@@ -560,3 +542,4 @@ def run_mqtt():
         pass
 
 run_mqtt()
+
