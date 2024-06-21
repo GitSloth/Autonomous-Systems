@@ -339,10 +339,9 @@ def pathing_light():
             print(highest_ldr_distance)
             if highest_ldr_value > ldr_max_threshold:
                 print("Found it!")
-                notfinished = False
+                #notfinished = False
                 client.publish(topics['send'], f"foundit {current_position}")
-                Stop()   
-                print(f"Current position: {current_position}")
+                MoveBack(1)
             elif highest_ldr_value >= ldr_min_threshold:
                 steer_to_angle(highest_ldr_angle)
                 last_spin_time = current_time
