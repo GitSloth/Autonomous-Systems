@@ -81,7 +81,7 @@ right_velocity = settings["right_velocity"]
 
 # mqtt settings
 broker = settings["mqtt_broker"] # change ip based on network 
-port = 1883
+port = settings["mqtt_broker_port"]
 client_id = f'robot_{random.randint(0, 10000)}'
 client = MQTTClient(client_id, broker, port)
 topic_register = "swarm/register"
