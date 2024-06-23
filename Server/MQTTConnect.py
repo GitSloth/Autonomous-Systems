@@ -2,7 +2,7 @@ import time
 from paho.mqtt import client as mqtt_client
 import json
 import threading
-from Server.ImageProcessing.marker_detection import MarkerDetector
+from ImageProcessing.marker_detection import MarkerDetector
 import logging
 import math
 import numpy as np
@@ -71,8 +71,8 @@ def start_camera():
 def detector_check(detector):
     '''
     Check if the detector returns is initialized properly.
-    returns true if succes, false if not
     param detector: instance of the detector MarkerDetector class
+    returns: True if succes, False if not
     '''
     try:
         detector.detectMarkers() #tries to call function to see if properly initialized
@@ -253,6 +253,7 @@ def create_target_circle( x_coordinate, y_coordinate):
     creates a circle around the target and creates coordinates to act as parking spaces once the target has been found
     param x_coordinate: x coordinate of the center
     param y_coordinate: y coordinate of the center
+    returns: list of robot target positons
     '''
     global bots_mqtt
 
@@ -399,6 +400,7 @@ def setup_bots(client):
 def get_bot_positions(client):
     '''
     get bot position and publish them
+    returns: json with bot positions
     '''
     global detector, bots_matched, bots_position
     if not started:

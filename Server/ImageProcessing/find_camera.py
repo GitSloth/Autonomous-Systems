@@ -1,6 +1,8 @@
 import cv2
-cv2.CAP_DSHOW
+
 def find_camera_sources():
+    '''
+    helps finding the right camera source to use'''
     for i in range(10):
         cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
         if not cap.isOpened():

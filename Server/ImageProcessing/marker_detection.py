@@ -13,7 +13,7 @@ except ImportError:
 class MarkerDetector:
     def __init__(self, cameraSource1=0, camType1=0, enableCam2=False, cameraSource2=0, camType2=0, debug=False):
         self.DEBUG = debug
-        self.offset = 50
+        self.offset = 50 #offset is applied to the marker coordinate to get the center between the wheels of the bot instead.
         self.enableCam2 = enableCam2
         self.cam1 = Camera(camType1, cameraSource1)
         if self.enableCam2:
@@ -27,11 +27,8 @@ class MarkerDetector:
         # If debug draw windows
         if self.DEBUG:
             cv2.namedWindow("Output", cv2.WINDOW_AUTOSIZE)
-            #cv2.namedWindow("Rejected", cv2.WINDOW_AUTOSIZE)
             if self.enableCam2:
                 cv2.namedWindow("Output2", cv2.WINDOW_AUTOSIZE)
-            #     cv2.namedWindow("Rejected2", cv2.WINDOW_AUTOSIZE)
-
 
     def normalize_vector(self, vector):
         """Normalize a 2D vector."""
@@ -55,8 +52,8 @@ class MarkerDetector:
 
     def detectMarkers(self):
         """
-        Get the position from the markers using image from cam.
-        :return: returns markerInfo
+        Detects the markers in the images from the camera class.
+        :return: list of markerInfo
         """
         markers = {}
         input1 = self.cam1.getImage()
@@ -96,10 +93,10 @@ class MarkerDetector:
                 top_left = (int(top_left[0]), int(top_left[1]))
                 centerX = int((top_left[0] + bottom_right[0]) / 2.0)
                 centerY = int((top_left[1] + bottom_right[1]) / 2.0)
-                
+                #drwa marker center
                 if self.DEBUG:
                     cv2.circle(input1, (centerX, centerY), 5, (0, 255, 0), -1)                        
-                # Calculate the angle of the marker
+                # Calculate the rotation of the marker
                 top_mid = ((top_left[0] + top_right[0]) / 2, (top_left[1] + top_right[1]) / 2)
                 bottom_mid = ((bottom_left[0] + bottom_right[0]) / 2, (bottom_left[1] + bottom_right[1]) / 2)
                 
@@ -108,10 +105,10 @@ class MarkerDetector:
 
                 adjusted_centerX = int(centerX + self.offset * norm_vector[0])
                 adjusted_centerY = int(centerY + self.offset * norm_vector[1])
-                
-                cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 5, (0, 255, 255), -1)
-                cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 80, (0, 255, 0), 1)
-
+                #draw offset center and avoidance radius
+                if self.DEBUG:
+                    cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 5, (0, 255, 255), -1)
+                    cv2.circle(input1, (adjusted_centerX, adjusted_centerY), 80, (0, 255, 0), 1)
                 
                 newMarkerInfoList.append({
                     'id': int(markerId),
@@ -132,18 +129,9 @@ class MarkerDetector:
                 aruco.drawDetectedMarkers(input1, corners_list, markersId)
                 cv2.imshow("Output", input1)
                 if self.enableCam2:
-                #     corners_list2 = [np.array(corners, dtype=np.int32) for corners in markersCorners2]
-                #     aruco.drawDetectedMarkers(input2, corners_list2, markersId2)
                     cv2.imshow("Output2", input2)
 
         if self.DEBUG:
-            #rejected = input1.copy()
-            #aruco.drawDetectedMarkers(rejected, rejectedCandidates1, borderColor=(100, 0, 255))
-            #cv2.imshow("Rejected", rejected)
-            # if self.enableCam2:
-            #     rejected2 = input2.copy()
-            #     aruco.drawDetectedMarkers(rejected2, rejectedCandidates2, borderColor=(100, 0, 255))
-            #     cv2.imshow("Rejected2", rejected2)
             cv2.waitKey(1)  # Ensure the images are updated
 
         return newMarkerInfoList
@@ -157,8 +145,8 @@ class MarkerDetector:
 # Example usage:
 if __name__ == "__main__":
     detector  = MarkerDetector(cameraSource1=0, camType1=0, enableCam2=True, cameraSource2='http://localhost:5005/video_feed', camType2=2, debug=True)
+    time.sleep(4)
 
-    #time.sleep(4)
     # Initialize variables for FPS calculation
     frame_count = 0
     start_time = time.time()
@@ -171,7 +159,6 @@ if __name__ == "__main__":
         endTime = (time.time_ns() -  beginTime) / 1000000
         # Increment frame count
         frame_count += 1
-        #time.sleep(0.03333)
 
         # Calculate elapsed time
         elapsed_time = time.time() - start_time
